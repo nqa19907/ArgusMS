@@ -21,4 +21,6 @@ jobs:
       - run: pip install -r requirements.txt
       - run: pip install ruff pytest
       - run: ruff check .
-      - run: pytest
+      - run: ruff check .
+      - name: Run pytest (tạm cho phép chưa có test)
+        run: pytest || [ $? -eq 5 ]
