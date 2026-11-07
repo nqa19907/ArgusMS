@@ -6,7 +6,7 @@ Phiên bản kế hoạch: 29/10/2026. Ngày 1–20 là ngày làm việc tươn
 
 Đích đến: nhập RTSP, xem trạng thái và hình camera, phát hiện diễn biến nghi ngã, xác nhận bằng chuỗi bằng chứng, gửi cảnh báo đến đúng điện thoại đã ghép và phát âm thanh theo trạng thái ứng dụng. Không có đăng ký hoặc đăng nhập cho người dùng cuối. AI xử lý tại backend; điện thoại là thiết bị theo dõi và nhận cảnh báo. 
 
-Cách dùng: đọc Chương 1–5 để hiểu thiết kế; mỗi thành viên làm theo Chương 6 và bảng ngày ở Chương 7; dùng Chương 8 khi chọn nhánh AI; dùng Chương 9 để tra hợp đồng từng file và Chương 11 để nghiệm thu. Các con số hiệu năng dưới đây là mục tiêu thử nghiệm hoặc ước lượng lập kế hoạch, chưa phải kết quả đạt được. 
+Cách dùng: đọc Chương 1–5 để hiểu thiết kế; mỗi thành viên làm theo Chương 6 và bảng ngày ở Chương 7; dùng Chương 8 để triển khai AI pretrained; dùng Chương 9 để tra hợp đồng từng file và Chương 11 để nghiệm thu. Các con số hiệu năng dưới đây là mục tiêu thử nghiệm hoặc ước lượng lập kế hoạch, chưa phải kết quả đạt được. 
 
 ## MỤC LỤC 
 
@@ -24,7 +24,7 @@ Cách dùng: đọc Chương 1–5 để hiểu thiết kế; mỗi thành viên
 
 <u>7. Lịch 20 ngày: 60 mục phân công</u> 
 
-<u>8. Hai lộ trình AI và mốc lựa chọn mô hình</u> 
+<u>8. Lộ trình dùng pretrained model và các mốc kiểm chứng</u> 
 
 <u>9. Cấu trúc source và quản lý file</u> 
 
@@ -53,7 +53,7 @@ Nguồn [S2] là liên kết trong sample-github-project.txt. Đã đọc README
 |AI phải tạo ra chức năng có<br>ích, tích hợp vào phần mềm|[S1], I.1.1|Pose và diễn biến theo thời gian quyết định sự kiện<br>nghi ngã; backend/app dùng kết quả đó.|
 |Có mã nguồn và demo chạy<br>được, kiểm thử hiệu quả|[S1], trang 1–2|Một pipeline chạy trên máy thật; APK Android; lệnh<br>chạy và test kỹ thuật.|
 |RTSP, không tài khoản, push<br>và âm thanh|Yêu cầu bổ sung của<br>người dùng|Nhập RTSP tại app; ghép thiết bị; FCM; xử lý<br>foreground/background riêng.|
-|Hai hướng AI, 3 người, đúng 4<br>tuần|Yêu cầu bổ sung của<br>người dùng|B là baseline chính; A là TCN nhỏ được tự train;<br>quyết định cuối ngày 10.|
+|Dùng pretrained model, 3<br>người, đúng 4 tuần|Yêu cầu bổ sung của<br>người dùng|Chốt dùng YOLO11n-pose pretrained kết hợp luật<br>theo thời gian và máy trạng thái; không tự train hoặc<br>fine-tune model.|
 |Android trước, một camera và<br>một người mục tiêu|Đề xuất giảm phạm<br>vi|MVP kiểm chứng trong một phòng, góc camera cố<br>định, đủ toàn thân.|
 |Không suy đoán tuổi từ hình<br>ảnh|Đề xuất kỹ thuật|Đối tượng sử dụng là hộ gia đình có người cao tuổi;<br>model phát hiện ngã của người trong vùng theo dõi.|
 |Desktop/iOS và nhiều camera|Không bắt buộc<br>trong nguồn/yêu cầu<br>hiện tại|Ngoài đường găng; không chia thời gian P0 cho app<br>desktop hay phát hành iOS.|
@@ -66,12 +66,12 @@ Nguồn [S2] là liên kết trong sample-github-project.txt. Đã đọc README
 |---|---|---|
 |src/camera/stream.py;<br>src/camera/rtsp.py|Thread đọc camera; hàng đợi nhỏ<br>bỏ frame cũ; timeout mở/đọc; TCP<br>và backoff.|Tham khảo thuật toán, viết reader nhỏ<br>với cùng nguyên tắc; đo lại timeout,<br>tránh sao chép toàn bộ lớp phụ thuộc.|
 |configs/model.yaml;<br>src/pipeline/decoupled_pipelin<br>e.py|Cấu hình pose hiện tại trỏ RTMO-s<br>ONNX; có nhánh YOLO, tracker,<br>chuỗi và nhiều tầng phân tích.|Không gọi sample chỉ là YOLO đơn<br>giản. MVP dùng YOLO11n-pose quen<br>thuộc, ít tầng hơn; giữ tách capture<br>khỏi inference.|
-|src/temporal/<br>sequence_buffer.py;<br>sequence_features.py|Buffer theo track; chuẩn hóa chuỗi<br>bằng gốc và tỉ lệ dùng chung cho<br>cửa sổ.|Dùng ý tưởng giữ chuyển động tương<br>đối theo thời gian; bổ sung timestamp<br>và kiểm tra khoảng trống.|
 
 
 
 |**Thành phần đã đọc**|**Nhận xét từ source**|**Cách áp dụng cho nhóm**|
 |---|---|---|
+|src/temporal/<br>sequence_buffer.py;<br>sequence_features.py|Buffer theo track; chuẩn hóa chuỗi<br>bằng gốc và tỉ lệ dùng chung cho<br>cửa sổ.|Dùng ý tưởng giữ chuyển động tương<br>đối theo thời gian; bổ sung timestamp<br>và kiểm tra khoảng trống.|
 |src/risk/state_machine.py;<br>configs/thresholds.yaml|Xác nhận theo thời gian, hysteresis,<br>phục hồi; có nhiều ngưỡng.|Viết máy trạng thái gọn cho bài toán<br>ngã; hiệu chỉnh trên validation, không<br>chép ngưỡng như chân lý.|
 |src/alerts/alert_manager.py;<br>notification.py|Có cooldown theo track/loại sự kiện;<br>dispatch WebSocket, webhook,<br>Telegram.|Dùng ý tưởng event_id và chống lặp;<br>xây mới FCM và outbox nhỏ.<br>Telegram không thay cho thông báo<br>của app riêng.|
 |src/api/server.py;<br>frontend/app.js|Có MJPEG, WebSocket và âm<br>thanh trong trình duyệt; frontend<br>dùng token đăng nhập.|Mượn định dạng stream và cách bắt<br>sự kiện; app Flutter mới; ghép thiết bị<br>thay hệ thống tài khoản.|
@@ -100,13 +100,13 @@ Tái sử dụng cụ thể: đọc và chuyển ý tưởng về capture, buffe
 
 |**Vai trò**|**Sở hữu đầu ra**|**Hỗ trợ bắt buộc**|**Giờ/**<br>**tuần**|
 |---|---|---|---|
-|SV1 — AI/CV|Pose, feature, hai scorer A/B, state<br>machine; dữ liệu, training và đánh giá<br>AI|Bàn giao contract ngay ngày 2; cùng<br>SV2 kiểm tra pipeline; cùng SV3 kiểm<br>tra ý nghĩa cảnh báo|20|
+|SV1 — AI/CV|Pose pretrained, feature, scorer luật,<br>state machine; dữ liệu kiểm chứng và<br>đánh giá AI|Bàn giao contract ngay ngày 2; cùng<br>SV2 kiểm tra pipeline; cùng SV3 kiểm<br>tra ý nghĩa cảnh báo|20|
 |SV2 —<br>backend/RTSP/tíc<br>h hợp|Camera reader, API, ghép thiết bị,<br>storage, event, FCM sender, vận hành<br>demo|Nhận AI stub từ ngày 2; cho app kết nối<br>từ ngày 3; chịu trách nhiệm đường đi<br>end-to-end|20|
 |SV3 —<br>Flutter/UI/thông<br>báo|Ghép thiết bị, trạng thái, camera view,<br>cảnh báo, quyền, âm thanh và APK|Dùng dữ liệu giả khi API chưa xong;<br>phối hợp smoke test FCM từ tuần 1|20|
 
 
 
-Nhịp một ngày 4 giờ: 45 phút học đúng chủ đề của task; 120 phút lập trình; 45 phút test và ghép với thành viên liên quan; 30 phút xử lý lỗi/đệm. Ngày khó có thể chuyển một phần code sang học, nhưng vẫn giữ ít nhất 30 phút test. Việc trích xuất dataset hoặc train có thể chạy tự động trong lúc làm task khác; thời gian theo dõi/chỉnh sửa vẫn tính vào ngân sách. Chốt cuối ngày 5, 10, 15 và 20 bằng thao tác trên phần mềm đang chạy, không bằng phát biểu “đã nghiên cứu xong”. 
+Nhịp một ngày 4 giờ: 45 phút học đúng chủ đề của task; 120 phút lập trình; 45 phút test và ghép với thành viên liên quan; 30 phút xử lý lỗi/đệm. Ngày khó có thể chuyển một phần code sang học, nhưng vẫn giữ ít nhất 30 phút test. Việc trích xuất dữ liệu kiểm chứng có thể chạy tự động trong lúc làm task khác; thời gian theo dõi/chỉnh sửa vẫn tính vào ngân sách. Chốt cuối ngày 5, 10, 15 và 20 bằng thao tác trên phần mềm đang chạy, không bằng phát biểu “đã nghiên cứu xong”. 
 
 ## 2. Kiến trúc, công nghệ và môi trường chạy 
 
@@ -117,15 +117,14 @@ Nhịp một ngày 4 giờ: 45 phút học đúng chủ đề của task; 120 ph
 |Backend|Python 3.11; FastAPI; Uvicorn một<br>worker|Hợp với CV Python, API có schema,<br>WebSocket/stream. Một worker tránh nhân đôi camera<br>và model; không chạy inference chặn event loop.|
 |Camera|OpenCV VideoCapture với FFmpeg<br>backend|Đọc RTSP/video/webcam cùng một adapter; timeout<br>phụ thuộc backend đã build. Không hứa<br>CAP_PROP_BUFFERSIZE luôn có tác dụng [S7].|
 |Pose|Ultralytics YOLO11n-pose, ByteTrack<br>chỉ định rõ|Một lần suy luận lấy box và COCO-17 keypoints. Đây là<br>pose estimator, không phải bộ phân loại ngã [S3, S4].|
-|AI B|Pose pretrained + luật theo thời gian|Không train pose; cần thêm đặc trưng, lịch sử, xác nhận<br>và chống lặp. Đây là baseline chính để hoàn thành<br>MVP.|
-|AI A|Pose đóng băng + TCN nhỏ tự train<br>bằng PyTorch|Huấn luyện phần phân loại chuỗi từ đầu; không gọi đó là<br>train toàn bộ hệ thống thị giác từ đầu.|
+|AI<br>pretrained|Pose pretrained + luật theo thời gian|Giữ nguyên weights pretrained; cần thêm đặc trưng, lịch<br>sử, xác nhận và chống lặp. Đây là phương án đã chốt<br>để hoàn thành MVP.|
 |Storage|sqlite3 có sẵn trong Python, một file<br>cục bộ|Chỉ giữ thiết bị, cấu hình và sự kiện cần giao lại sau<br>reconnect; outbox notification. Không cần<br>PostgreSQL/Redis/Celery.|
-|App|Flutter/Dart, Android trước|Một app có UI, WebSocket, HTTP, FCM. Dùng<br>StatefulWidget/ChangeNotifier nhẹ, không thêm<br>BLoC/Riverpod trong MVP.|
 
 
 
 |**Lớp**|**Chọn cho MVP**|**Lý do và giới hạn**|
 |---|---|---|
+|App|Flutter/Dart, Android trước|Một app có UI, WebSocket, HTTP, FCM. Dùng<br>StatefulWidget/ChangeNotifier nhẹ, không thêm<br>BLoC/Riverpod trong MVP.|
 |Thông báo|Firebase Cloud Messaging; firebase-<br>admin tại backend|Push không phụ thuộc việc app giữ WebSocket. Người<br>phát triển cấu hình Firebase; người dùng cuối không tạo<br>tài khoản [S8–S11].|
 |Video tới<br>app|MJPEG qua HTTP; flutter_mjpeg|Backend chuyển frame thành JPEG; widget nhận HTTP<br>cùng header thiết bị. Điện thoại không phải phát RTSP<br>trực tiếp [S14].|
 |Thử RTSP|MediaMTX + FFmpeg, chỉ dùng công<br>cụ có sẵn|Nếu chưa có camera, phát MP4 qua RTSP thật; đọc<br>MP4 trực tiếp vẫn chỉ kiểm tra CV, chưa kiểm tra RTSP<br>[S15].|
@@ -139,15 +138,13 @@ Không chọn Django cho MVP này vì không cần admin site, ORM lớn hay h�
 
 
 <!-- Start of picture text -->
-KIEN TRUC MVP: LAPTOP XU LY, ANDROID NHAN CANH BAO<br>BACKEND PYTHON * MOT WORKER<br>C»CAMERA IP. RTSP (...CAPTURE + BO DEM MOI NHAT Y MJPEG C.»<br>RTSP / TCP j ; APP ANDROID<br>L [ Thread riéng + frame cé timestamp. UL + ghép thiét bj<br>Frame mdi. 4m thanh foreground<br>Pose|___MOt ~model SCORERactive  A/B+ latch > XACtheo episodemt WS khi0S appnén mo/khéa<br>Confirmed<br>“ h<br>EVENT + SQLITE + OUTBOX FCM<br>M6t event_id + retry hiu han Notification + data<br>RTSP chi tdi backend. Dién thoai nhan HTTP/WS va push; khéng chay Al<br><!-- End of picture text -->
+KIEN TRUC MVP: LAPTOP XU LY, ANDROID NHAN CANH BAO<br>BACKEND PYTHON * MOT WORKER<br>ccCAMERA IP .| GGCAPTURE + BO DEM MOI NHAT > [=<br>. - APP ANDROID<br>{ RTSP / TCP ) L Thread riéng * frame cé timestamp ) Ul + ghép thiet b|<br>.<br>Frame mdi am thanh foreground<br>L )<br>POSE ~ LUAT > XAC NHAN<br>WS khi app mo<br>Mét model active « latch theo episode OS nén/khéa<br>| Confirmed<br>i h<br>EVENT + SQLITE + OUTBOX FCM<br>Mét event_id * retry hiu han Notification + data<br>RTSP chi téi backend. Dién thoai nhan HTTP/WS va push; khéng chay Al<br><!-- End of picture text -->
 
 _Hình 1. Kiến trúc MVP: xử lý video tại laptop, app Android nhận hình và sự kiện, FCM là kênh push độc lập._ 
 
 Trong một tiến trình backend có thread capture, thread inference và worker gửi notification; các request HTTP/WebSocket chạy trên vòng lặp Uvicorn. Capture đưa frame mới nhất vào bộ đệm dung lượng 1. Inference lấy frame và tạo DetectionUpdate. Máy trạng thái tạo sự kiện khi đủ bằng chứng. Event được lưu trước rồi phát WebSocket và đưa vào outbox FCM. JPEG mới nhất được dùng chung cho các client để không encode lại theo từng người xem. 
 
-Không dùng chung một cv2.VideoCapture giữa các thread; thread capture sở hữu việc open/read/release. Không gọi phương thức YOLO cùng một model từ nhiều worker. Bảo vệ cấu trúc shared bằng lock ngắn; không giữ lock khi inference, encode JPEG hoặc gửi mạng. 
-
-Nếu benchmark cho thấy CPU khiến API không phản hồi, bước cải tiến là tách inference sang một process với hàng đợi hữu hạn; không tăng số worker Uvicorn để chữa vấn đề đó. 
+Không dùng chung một cv2.VideoCapture giữa các thread; thread capture sở hữu việc open/read/release. Không gọi phương thức YOLO cùng một model từ nhiều worker. Bảo vệ cấu trúc shared bằng lock ngắn; không giữ lock khi inference, encode JPEG hoặc gửi mạng. Nếu benchmark cho thấy CPU khiến API không phản hồi, bước cải tiến là tách inference sang một process với hàng đợi hữu hạn; không tăng số worker Uvicorn để chữa vấn đề đó. 
 
 ### 2.3. Hai môi trường demo cụ thể 
 
@@ -176,9 +173,7 @@ flutterfire configure --platforms=android
 flutter run
 ```
 
-SV3 cài Android SDK và Flutter theo hướng dẫn chính thức, giải quyết flutter doctor trước khi làm UI. Thêm integration_test vào dev_dependencies theo đoạn YAML dưới. Chạy FlutterFire CLI sau khi cài Firebase CLI và đăng nhập tài khoản phát triển [S10]. Package 
-
-name cố định từ đầu, ví dụ com.student.mobile; giữ đúng applicationId khi đăng ký Firebase. Nếu đổi tên hiển thị thì không đổi applicationId giữa tuần 2. 
+SV3 cài Android SDK và Flutter theo hướng dẫn chính thức, giải quyết flutter doctor trước khi làm UI. Thêm integration_test vào dev_dependencies theo đoạn YAML dưới. Chạy FlutterFire CLI sau khi cài Firebase CLI và đăng nhập tài khoản phát triển [S10]. Package name cố định từ đầu, ví dụ com.student.mobile; giữ đúng applicationId khi đăng ký Firebase. Nếu đổi tên hiển thị thì không đổi applicationId giữa tuần 2. 
 
 ```
 # mobile/pubspec.yaml — bổ sung vào dev_dependencies đã có:
@@ -208,13 +203,29 @@ sqlite_path: runtime/fallguard.db
 app_env: development
 ```
 
-<mark>`# configs/ai.yaml mode: pretrained pose_weights: models/yolo11n-pose.pt image_size: 480 sample_hz: 10 window_samples: 30 max_pose_gap_seconds: 0.3 min_valid_window_fraction: 0.8 confirmation_seconds: 2.0 recovery_seconds: 3.0 cooldown_seconds: 60`</mark> Các giá trị này là điểm bắt đầu để chạy thử. Số 10 Hz, 30 mẫu và 2 giây phải được dùng nhất quán giữa trích xuất dữ liệu và runtime; thay đổi phải huấn luyện/đánh giá lại nhánh A hoặc xác nhận metadata khớp. RTSP URL có mật khẩu nằm trong cấu hình runtime do app gửi, không ghi vào YAML public. configs/app.yaml chỉ giữ URL ví dụ đã loại bí mật; .env.example chỉ giữ tên biến. Không trả RTSP URL nguyên vẹn về endpoint status. 
+```
+# configs/ai.yaml
+mode: pretrained
+pose_weights: models/yolo11n-pose.pt
+image_size: 480
+sample_hz: 10
+window_samples: 30
+max_pose_gap_seconds: 0.3
+min_valid_window_fraction: 0.8
+confirmation_seconds: 2.0
+recovery_seconds: 3.0
+cooldown_seconds: 60
+```
+
+Các giá trị này là điểm bắt đầu để chạy thử. Số 10 Hz, 30 mẫu và 2 giây phải được dùng nhất quán giữa trích xuất dữ liệu và runtime; thay đổi phải đánh giá lại và xác nhận metadata khớp. RTSP URL có mật khẩu nằm trong cấu hình runtime do app gửi, không ghi vào YAML public. configs/app.yaml chỉ giữ URL ví dụ đã loại bí mật; .env.example chỉ giữ tên biến. Không trả RTSP URL nguyên vẹn về endpoint status. 
 
 ## 3. Hợp đồng dữ liệu, API và ghép thiết bị 
 
 ### 3.1. Hợp đồng giữa camera, AI, backend và app 
 
-SV1 định nghĩa dataclass Python trong backend/contracts.py, SV2 định nghĩa schema HTTP tương ứng và cả hai cùng khóa nghĩa của trường trong ngày 2. Flutter không import Python: SV3 viết parser theo JSON mẫu trong mobile/lib/models.dart. Backend chỉ serialize bản DTO cho network; không đưa numpy.ndarray hoặc toàn bộ keypoints vào push. schema_version bắt đầu bằng 1; khi thay đổi ý nghĩa trường thì cả ba cùng cập nhật, không âm thầm đổi tên giữa tuần. 
+SV1 định nghĩa dataclass Python trong backend/contracts.py, SV2 định nghĩa schema HTTP tương ứng và cả hai cùng khóa nghĩa của trường trong ngày 2. Flutter không import Python: SV3 viết parser theo JSON mẫu trong mobile/lib/models.dart. Backend chỉ serialize 
+
+bản DTO cho network; không đưa numpy.ndarray hoặc toàn bộ keypoints vào push. schema_version bắt đầu bằng 1; khi thay đổi ý nghĩa trường thì cả ba cùng cập nhật, không âm thầm đổi tên giữa tuần. 
 
 ```
 from dataclasses import dataclass
@@ -222,22 +233,75 @@ from typing import Literal, Protocol
 import numpy as np
 ```
 
-<mark>`@dataclass(frozen=True) class FramePacket: camera_id: str stream_session_id: str frame_id: int captured_mono: float captured_at_utc: str image_bgr: np.ndarray @dataclass(frozen=True) class FallCandidate: track_id: int score: float score_kind: Literal["rule_score", "uncalibrated_model_score"] valid_pose: bool onset_observed: bool low_posture: bool reasons: tuple[str, ...] @dataclass(frozen=True) class DetectionUpdate: camera_id: str stream_session_id: str frame_id: int candidates: tuple[FallCandidate, ...] inference_ms: float model_id: str class FallDetector(Protocol): def process(self, packet: FramePacket) -> DetectionUpdate: ... def reset(self, stream_session_id: str) -> None: ... def close(self) -> None: ...`</mark> captured_mono dùng đo khoảng thời gian trong cùng tiến trình; captured_at_utc dùng hiển thị và đối chiếu thiết bị. captured_mono là lúc frame đã được backend nhận, không phải timestamp phơi sáng thật của camera. stream_session_id đổi sau reconnect/switch camera để không ghép lịch sử của hai luồng. frame_id tăng trong một phiên. score của luật chỉ là điểm quy tắc; score model chưa hiệu chuẩn không được hiển thị như xác suất y khoa hay “độ chính xác 84%”. 
+```
+@dataclass(frozen=True)
+class FramePacket:
+    camera_id: str
+    stream_session_id: str
+    frame_id: int
+    captured_mono: float
+    captured_at_utc: str
+    image_bgr: np.ndarray
+@dataclass(frozen=True)
+class FallCandidate:
+    track_id: int
+    score: float
+    score_kind: Literal["rule_score", "uncalibrated_model_score"]
+    valid_pose: bool
+    onset_observed: bool
+    low_posture: bool
+    reasons: tuple[str, ...]
+@dataclass(frozen=True)
+class DetectionUpdate:
+    camera_id: str
+    stream_session_id: str
+    frame_id: int
+    candidates: tuple[FallCandidate, ...]
+    inference_ms: float
+    model_id: str
+class FallDetector(Protocol):
+    def process(self, packet: FramePacket) -> DetectionUpdate: ...
+    def reset(self, stream_session_id: str) -> None: ...
+    def close(self) -> None: ...
+```
 
-FallDetector sở hữu pose, buffer và scorer A hoặc B; nó chỉ trả bằng chứng từng lần xử lý. FallStateMachine dùng chung nằm ngoài scorer để A/B có cùng điều kiện xác nhận. backend/pipeline.py gọi process(), đưa candidate vào state machine theo từng (stream_session_id, track_id), rồi gửi transition CONFIRMED sang EventService. Model không tự gửi notification, không giữ FCM token và không biết điện thoại nào đang xem. 
+captured_mono dùng đo khoảng thời gian trong cùng tiến trình; captured_at_utc dùng hiển thị và đối chiếu thiết bị. captured_mono là lúc frame đã được backend nhận, không phải timestamp phơi sáng thật của camera. stream_session_id đổi sau reconnect/switch camera để không ghép lịch sử của hai luồng. frame_id tăng trong một phiên. score của luật chỉ là điểm quy tắc; score model chưa hiệu chuẩn không được hiển thị như xác suất y khoa hay “độ chính xác 84%”. 
+
+FallDetector sở hữu pose, buffer và scorer luật dùng pose pretrained; nó chỉ trả bằng chứng từng lần xử lý. FallStateMachine nằm ngoài scorer để áp dụng điều kiện xác nhận theo thời gian. backend/pipeline.py gọi process(), đưa candidate vào state machine theo từng (stream_session_id, track_id), rồi gửi transition CONFIRMED sang EventService. Model không tự gửi notification, không giữ FCM token và không biết điện thoại nào đang xem. 
 
 ### 3.2. Schema status và sự kiện chuẩn 
 
 ```
 {
   "schema_version": 1,
+```
+
+```
   "installation_id": "installation-lab-a",
+```
+
+```
   "camera": {
+```
+
+```
     "id": "living_room", "state": "CONNECTED",
+```
+
+```
     "last_frame_age_ms": 140, "reconnect_attempts": 0
   },
+```
+
+```
   "ai": {
+```
+
+```
     "state": "READY", "mode": "pretrained",
+```
+
+```
     "model_id": "pose-rules-v1", "processed_fps": 9.4,
     "last_inference_ms": 94, "warmup_remaining_samples": 0
   },
@@ -280,12 +344,12 @@ occurred_at là mốc onset suy ra từ khung hình, confirmed_at là khi đủ 
 |GET /api/v1/status|Authorization: Bearer<br>device_secret|Status như ví dụ; 401/403 khóa không<br>hợp lệ hoặc đã thu hồi.|
 |PUT /api/v1/camera|Khóa thiết bị đã ghép; URL<br>RTSP, nhãn camera|202: CONNECTING và request_id; kết<br>quả về status/WS. 422 scheme/host<br>thiếu; không block request chờ RTSP vô<br>hạn.|
 |POST /api/v1/camera/stop|Khóa thiết bị|202; reader dừng, AI reset, không sinh<br>sự kiện vì mất frame.|
-|GET /api/v1/stream.mjpeg|Khóa thiết bị qua header|multipart/x-mixed-replace;<br>boundary=frame. Không gửi RTSP cho<br>app; ngắt viewer không dừng AI.|
 
 
 
 |**Phương thức và route**|**Đầu vào/quyền**|**Đầu ra; lỗi cần xử lý**|
 |---|---|---|
+|GET /api/v1/stream.mjpeg|Khóa thiết bị qua header|multipart/x-mixed-replace;<br>boundary=frame. Không gửi RTSP cho<br>app; ngắt viewer không dừng AI.|
 |GET /api/v1/preview.jpg|Khóa thiết bị; route dự phòng<br>cùng cache|JPEG mới nhất hoặc 503 khi chưa có<br>frame; app có thể polling 1 FPS thay<br>MJPEG.|
 |WS /api/v1/ws|Khóa qua header lúc handshake<br>trên Android|camera.status, ai.status, fall.confirmed;<br>ping/pong và reconnect; snapshot qua<br>REST sau resume.|
 |GET /api/v1/events?<br>after=<cursor>|Khóa thiết bị; cursor event tăng<br>dần từ storage|Danh sách có giới hạn, next_cursor;<br>dùng khi WS bị ngắt. Không suy thứ tự<br>UUID theo thời gian.|
@@ -315,17 +379,13 @@ code>&installation=<installation-id>
 ```
 POST /api/v1/pairing/claim
 {
-```
-
-```
   "pairing_code": "<one-time-code>",
+  "expected_installation_id": "<installation-id>",
+  "client_label": "Dien thoai nguoi cham soc"
+}
 ```
 
-- <mark>`"expected_installation_id": "<installation-id>",`</mark> 
-
-- <mark>`"client_label": "Dien thoai nguoi cham soc"`</mark> 
-
-- `}` ● backend/pairing.py dùng secrets.token_urlsafe(32); chỉ lưu SHA-256 của code; hết hạn dựa UTC trong DB. BEGIN IMMEDIATE/transaction kiểm tra chưa dùng rồi đánh dấu đã dùng và tạo device trong cùng giao dịch; hai app claim đồng thời chỉ một app thành công. 
+- backend/pairing.py dùng secrets.token_urlsafe(32); chỉ lưu SHA-256 của code; hết hạn dựa UTC trong DB. BEGIN IMMEDIATE/transaction kiểm tra chưa dùng rồi đánh dấu đã dùng và tạo device trong cùng giao dịch; hai app claim đồng thời chỉ một app thành công. 
 
 - Khóa thiết bị mới được gửi về đúng lần claim; backend chỉ lưu hash. device_secret là quyền API, khác FCM endpoint là địa chỉ nhận push. Cất khóa trong flutter_secure_storage; không lưu chung với UI settings dạng text. 
 
@@ -354,9 +414,7 @@ Endpoint tạo pairing không công khai trên LAN: CLI là cách tạo mã P0. 
 
 
 
-schema.sql tạo bảng idempotent. Mở SQLite connection ngắn theo thread/giao dịch, đặt timeout, bật WAL nếu đã test trên máy; không share connection mặc định giữa thread capture/AI/API. Có lock cho các giao dịch ghi ngắn; tuyệt đối không giữ transaction khi gọi 
-
-FCM. MVP giữ tối đa 100 sự kiện gần nhất hoặc 7 ngày; đó là dữ liệu tính năng để app đồng bộ, không xây kho video hay hệ thống phân tích vận hành lớn. 
+schema.sql tạo bảng idempotent. Mở SQLite connection ngắn theo thread/giao dịch, đặt timeout, bật WAL nếu đã test trên máy; không share connection mặc định giữa thread capture/AI/API. Có lock cho các giao dịch ghi ngắn; tuyệt đối không giữ transaction khi gọi FCM. MVP giữ tối đa 100 sự kiện gần nhất hoặc 7 ngày; đó là dữ liệu tính năng để app đồng bộ, không xây kho video hay hệ thống phân tích vận hành lớn. 
 
 ## 4. Pipeline RTSP và thuật toán nhận diện ngã 
 
@@ -400,21 +458,18 @@ CAP_PROP_BUFFERSIZE chỉ là một cấu hình hỗ trợ nếu backend triển
 
 ```
 # Pipeline trách nhiệm, không phải toàn bộ code chạy ngay:
+```
+
+```
 capture_worker:
     open_with_timeouts()
     while not stop_event.is_set():
         ok, frame = capture.read()
         if not ok or frame is None:
             mark_reconnecting_and_reset_session()
-```
-
-```
             reconnect_with_bounded_backoff()
             continue
         latest_frame.replace(make_packet(frame))
-```
-
-```
 inference_worker:
     packet = latest_frame.wait_newer_than(last_frame_id)
     update = detector.process(packet)
@@ -439,35 +494,35 @@ Keypoint COCO-17 gồm mũi, mắt, tai, vai, khuỷu, cổ tay, hông, gối, c
 |Góc thân θ|u = midpoint(vai) − midpoint(hông); θ =<br>atan2(abs(u_x), abs(u_y)) đổi sang độ. Gần 0 là<br>thân đứng; gần 90 là thân ngang theo ảnh.|Thiếu vai/hông hoặc camera nhìn<br>cao làm góc méo<br>invalid, không<br>→<br>tự thay bằng 90.|
 |Tỉ lệ khung r|r = width/(height+epsilon), chỉ tính khi box hợp lệ.<br>Hỗ trợ nhận biết hình người thấp, bè ra.|Ngồi/cúi cũng đổi box; r cao không<br>đủ kết luận ngã.|
 |Vận tốc hông<br>theo ảnh|v = (y_hip(t) − y_hip(t−Δt)) / (H_ref × Δt). H_ref là<br>chiều cao đứng tin cậy trước đó. y tăng hướng<br>xuống.|Không phải m/s; không dùng scale<br>box đang co mạnh làm vận tốc tăng<br>giả. Chưa có H_ref thì giảm tin cậy.|
-|Thay đổi góc|Δθ/Δt trên các mẫu có chất lượng, kết hợp tụt hông<br>trong thời gian ngắn.|Đạo hàm nhạy nhiễu; smoothing<br>nhẹ, khoảng cách thời gian thật;<br>không nối qua gap.|
-|Tư thế thấp kéo<br>dài|Tổng thời gian bằng chứng low_posture hợp lệ sau<br>onset, trong cửa sổ xác nhận 2 s.|“Không thấy người” không đồng<br>nghĩa đang nằm bất động; gap dài<br>hủy xác nhận.|
 
 
 
 |**Đặc trưng**|**Cách tính và ý nghĩa**|**Giới hạn cần xử lý**|
 |---|---|---|
+|Thay đổi góc|Δθ/Δt trên các mẫu có chất lượng, kết hợp tụt hông<br>trong thời gian ngắn.|Đạo hàm nhạy nhiễu; smoothing<br>nhẹ, khoảng cách thời gian thật;<br>không nối qua gap.|
+|Tư thế thấp kéo<br>dài|Tổng thời gian bằng chứng low_posture hợp lệ sau<br>onset, trong cửa sổ xác nhận 2 s.|“Không thấy người” không đồng<br>nghĩa đang nằm bất động; gap dài<br>hủy xác nhận.|
 |Chuyển động sau<br>hạ người|Độ dịch khớp chuẩn hóa theo tỉ lệ cố định; dùng hỗ<br>trợ, không bắt buộc bất động tuyệt đối.|Một người ngã vẫn có thể cử động;<br>điều kiện bất động quá chặt gây bỏ<br>sót.|
 
 
 
 Ngưỡng thử đầu tiên có thể là θ > 60°, r > 1.1, vận tốc hông > 0.7 chiều cao tham chiếu/giây và biến đổi nhanh trong < 1 giây. Chỉ coi đây là giả thuyết để sweep trên validation, không phải ngưỡng y khoa hay giá trị lấy từ kiểm thử. Rule candidate yêu cầu có ít nhất hai bằng chứng chuyển động/tư thế hợp lệ, tránh một tín hiệu nhiễu tự phát alarm. Ngưỡng cuối lưu trong configs/ai.yaml; giữ tập test tách biệt. 
 
-### 4.4. Lấy mẫu theo thời gian và chuẩn hóa cho nhánh A 
+### 4.4. Lấy mẫu theo thời gian và chuẩn hóa cho pretrained pipeline 
 
 Dùng một cửa sổ 30 mốc × 10 Hz = 3 giây. Buffer có timestamp chứ không coi 30 frame bất kỳ luôn là 3 giây. Không đếm cùng frame_id hai lần để tạo cảm giác đủ dữ liệu. Ở mỗi tick dùng quan sát mới gần tick; ghi confidence/mask khi thiếu, không bịa pose. Khoảng thiếu >0.3 giây làm mất tính liên tục, reset phần xác nhận và bắt đầu warmup; cửa sổ ít hơn 80% quan sát hợp lệ không được cho model phát candidate. 
 
-Vector mỗi mẫu dài 54: 17 × (x,y,confidence) = 51 giá trị, thêm y_hip theo chiều cao ảnh, góc thân chuẩn hóa và tỉ lệ box đã giới hạn. TCN nhận [batch,54,30], dataset lưu [T,54] rồi transpose trước model. Dùng cùng hàm normalize_window() trong train và runtime. Gốc tọa độ và scale lấy chung cho cả cửa sổ: ví dụ gốc hông đầu cửa sổ có đủ tin cậy, scale trung vị chiều dài thân hợp lệ. Không trừ hông riêng mỗi frame rồi làm mất bằng chứng cơ thể đang tụt xuống. 
+Vector mỗi mẫu dài 54: 17 × (x,y,confidence) = 51 giá trị, thêm y_hip theo chiều cao ảnh, góc thân chuẩn hóa và tỉ lệ box đã giới hạn. Cache lưu [T,54]. Dùng cùng hàm normalize_window() khi đánh giá offline và trong runtime. Gốc tọa độ và scale lấy chung cho cả cửa sổ: ví dụ gốc hông đầu cửa sổ có đủ tin cậy, scale trung vị chiều dài thân hợp lệ. Không trừ hông riêng mỗi frame rồi làm mất bằng chứng cơ thể đang tụt xuống. 
 
-Khi có short gap, confidence tương ứng bằng 0 và coordinate lấy theo quy ước đã khóa, chỉ nội suy ngắn trong cửa sổ quan sát được nếu đã kiểm chứng giống runtime. Phương án P0 đơn giản hơn là không nội suy, loại cửa sổ không đủ chất lượng. Metadata model ghi feature_version, sample_hz, window_samples, input_dim=54 và pose_schema=COCO17. Khi khác metadata, backend báo model không tương thích và chuyển về B hoặc dừng AI rõ ràng; không load âm thầm rồi phát dự đoán sai. 
+Khi có short gap, confidence tương ứng bằng 0 và coordinate lấy theo quy ước đã khóa, chỉ nội suy ngắn trong cửa sổ quan sát được nếu đã kiểm chứng giống runtime. Phương án P0 đơn giản hơn là không nội suy, loại cửa sổ không đủ chất lượng. Metadata model ghi feature_version, sample_hz, window_samples, input_dim=54 và pose_schema=COCO17. Khi khác metadata, backend báo model không tương thích và dừng AI rõ ràng; không load âm thầm rồi phát dự đoán sai. 
 
 ### 4.5. Máy trạng thái xác nhận và chặn cảnh báo lặp 
 
 
 
 <!-- Start of picture text -->
-MAY TRANG THAI: XAC NHAN MOT LAN CHO MOI DIEN BIEN<br>Khéng cén bang chting > hily nghi ng<br>> la .<br>WARMUP NORMAL SUSPECTED<br>DU lich sirhgp 16 Theo déi trudc onset Cé onset + score di<br>Re-arm sau héi phuc + codidown<br>Khéng ghp dai<br>RECOVERY Héi phuc LATCHED Event CONFIRMED<br>Binh thudng lién tuc ~3 s Mét event; khéng gif lai Low posture hgp Ié ~2 s<br>) \<br>Dé ligu tré lai<br>reset + WARMUP<br>Mat dif ligu 65 bat ky trang thai nao:<br>( ngimg xac nhan, khéng coi la bat dong<br>UNKNOWN<br>Thiéu frame / pose<br>Ack trén app ding canh bdo, khéng thay thé diéu kién héi phuc cia Al.<br><!-- End of picture text -->
+MAY TRANG THAI: XAC NHAN MOT LAN CHO MOI DIEN BIEN<br>Khéng cén bang chting > hily nghi ng<br>> la<br>WARMUP NORMAL SUSPECTED<br>DU lich sirhgp 16 Theo déi trudc onset Cé onset + score di<br>Re-arm sau héi phuc + codidown<br>Khéng ghp dai<br>RECOVERY Héi phuc LATCHED Event CONFIRMED<br>Binh thudng lién tuc ~3 s Mét event; khéng gif lai Low posture hgp Ié ~2 s<br>) \ )<br>Dé ligu tré lai<br>reset + WARMUP<br>Mat dif ligu 65 bat ky trang thai nao:<br>( ngimg xac nhan, khéng coi la bat dong<br>UNKNOWN<br>Thiéu frame / pose<br>Ack trén app ding canh bdo, khéng thay thé diéu kién héi phuc cia Al.<br><!-- End of picture text -->
 
-_Hình 2. Máy trạng thái dùng chung cho A/B; mất dữ liệu làm gián đoạn xác nhận thay vì được tính như bất động._ 
+_Hình 2. Máy trạng thái cho pipeline pretrained; mất dữ liệu làm gián đoạn xác nhận thay vì được tính như bất động._ 
 
 |**Trạng thái**|**Điều kiện vào/ra**|**Hành động**|
 |---|---|---|
@@ -504,9 +559,7 @@ Các ca dễ nhầm: ngồi ghế nhanh, cúi nhặt đồ, quỳ, nằm từ t�
 
 
 
-Màn hình home dùng API lấy snapshot lúc mở và stream WS cho thay đổi; nếu WS rớt thì hiển thị mất kết nối và retry với backoff. Resume app: đọc status, đồng bộ events theo 
-
-cursor, cập nhật token FCM mới nếu có. Không dựa WS luôn sống khi app ở nền. Bấm Đã xem chỉ xác nhận đã đọc event; không xác nhận người đã an toàn, không làm AI reset khi chưa có recovery. 
+Màn hình home dùng API lấy snapshot lúc mở và stream WS cho thay đổi; nếu WS rớt thì hiển thị mất kết nối và retry với backoff. Resume app: đọc status, đồng bộ events theo cursor, cập nhật token FCM mới nếu có. Không dựa WS luôn sống khi app ở nền. Bấm Đã xem chỉ xác nhận đã đọc event; không xác nhận người đã an toàn, không làm AI reset khi chưa có recovery. 
 
 ### 5.2. Luồng push từ AI tới Android 
 
@@ -599,7 +652,7 @@ Mỗi khối A–I là một gói công việc có thể kiểm chứng. E lấy
 |**Cuối tuần**|**Người dùng làm được gì?**|**Tích hợp bắt buộc**|**Điều kiện chuyển tuần**|
 |---|---|---|---|
 |1 — nền<br>tảng|Ghép điện thoại, xem trạng thái<br>backend/camera; thấy pose khi<br>chạy clip riêng; nhận push thử.|RTSP hoặc RTSP phát từ<br>video<br>backend; AI stub<br>→<br>→<br>WS<br>app; Firebase sender<br>→<br>máy thật.<br>→|Không chỉ có môi trường;<br>ngày 5 thao tác thật được.<br>Nếu camera chưa có, RTSP<br>giả lập phải chạy.|
-|2 — nhận<br>diện|Xem hình camera; app hiện<br>trạng thái nghi ngã từ AI thật; B<br>chạy, A có train/validation tối<br>thiểu nếu dữ liệu đạt.|Pose/feature/state machine →<br>backend update → app; đổi<br>B/A qua cùng interface.|Ngày 10 chọn model MVP<br>theo validation/latency; giữ<br>B nếu A chưa đáng tin.|
+|2 — nhận<br>diện|Xem hình camera; app hiện<br>trạng thái nghi ngã từ AI thật<br>dùng pose pretrained và luật<br>theo thời gian.|Pose/feature/state machine →<br>backend update → app; cùng<br>detector interface.|Ngày 10 kiểm chứng<br>pipeline pretrained và chốt<br>ngưỡng theo<br>validation/latency.|
 
 
 
@@ -614,7 +667,7 @@ Mỗi khối A–I là một gói công việc có thể kiểm chứng. E lấy
 
 #### A. Mục tiêu của tuần 
 
-Trong 20 giờ tạo được detector interface, output mock, smoke script pose/video và manifest dữ liệu đầu tiên. Mục tiêu AI B là thấy được người/khớp trên clip; mục tiêu A là có mẫu dữ liệu trích xuất đúng và split theo nhóm, chưa bắt buộc có model ngã đã train. Dành khoảng 8 giờ cho pose/interface, 6 giờ dữ liệu/nhãn, 4 giờ extraction và 2 giờ bàn giao/test. 
+Trong 20 giờ tạo được detector interface, output mock, smoke script pose/video và manifest dữ liệu đầu tiên. Mục tiêu là thấy được người/khớp bằng pretrained model trên clip, có mẫu dữ liệu kiểm chứng trích xuất đúng và split theo nhóm. Dành khoảng 8 giờ cho pose/interface, 6 giờ dữ liệu/nhãn, 4 giờ extraction và 2 giờ bàn giao/test. 
 
 #### B. Kiến thức cần học 
 
@@ -624,11 +677,11 @@ Trong 20 giờ tạo được detector interface, output mock, smoke script pose
 
 - Học vòng lặp inference và track theo chuỗi: load model ngoài vòng for, persist=True cho các frame cùng video, reset khi đổi video. Không cần học sâu backbone YOLO hoặc tự cài ByteTrack trong tuần 1. 
 
-- Học dataset ở mức clip/sequence, nhãn thời gian onset–impact, group split và leakage. Hiểu vì sao hai frame liền nhau không được rải ngẫu nhiên vào train và test. 
+- Học dataset ở mức clip/sequence, nhãn thời gian onset–impact, group split và leakage. Hiểu vì sao hai frame liền nhau không được rải ngẫu nhiên vào validation và test. 
 
 #### C. Áp dụng trực tiếp vào project 
 
-Frame từ VideoCapture/RTSP của SV2 sẽ có cùng contract FramePacket. PoseEstimator nhận ảnh và trả khớp; PoseBuffer giữ lịch sử nhưng chưa kết luận ngã. MockDetector cho SV2 giả lập output để ghép API trước khi model xong. Manifest/nhãn/cached pose là đầu vào nhánh A ở tuần 2; SV3 chỉ nhận JSON minh họa, không phải nhận tensor. 
+Frame từ VideoCapture/RTSP của SV2 sẽ có cùng contract FramePacket. PoseEstimator nhận ảnh và trả khớp; PoseBuffer giữ lịch sử nhưng chưa kết luận ngã. MockDetector cho SV2 giả lập output để ghép API trước khi model xong. Manifest/nhãn/cached pose dùng để hiệu chỉnh ngưỡng và đánh giá ở tuần 2; SV3 chỉ nhận JSON minh họa, không phải nhận tensor. 
 
 #### D. Công việc lập trình cụ thể 
 
@@ -636,59 +689,53 @@ Frame từ VideoCapture/RTSP của SV2 sẽ có cùng contract FramePacket. Pose
 
 - T2. Tải weights chính thức, tạo PoseEstimator với device CPU mặc định. Viết ai_smoke đọc 30–60 giây video, vẽ box/khớp, đếm frame_id và in thời gian trung bình. Chỉ chuyển tiếp khi một model được load một lần và clip chạy hết. 
 
-- T3. Tải thử vài sequence RGB camera0 của URFD, mở xem tên file/thứ tự frame và nhãn nguồn. Tạo clips.csv với group/subject unknown nếu chưa xác minh; đặt 
-
-train/val/test theo group trước khi trích hàng nghìn cửa sổ. Không chuyển sang full extraction khi chưa hiểu timestamp/FPS. 
+- T3. Tải thử vài sequence RGB camera0 của URFD, mở xem tên file/thứ tự frame và nhãn nguồn. Tạo clips.csv với group/subject unknown nếu chưa xác minh; đặt val/test theo group trước khi trích hàng nghìn cửa sổ. Không chuyển sang full extraction khi chưa hiểu timestamp/FPS. 
 
 - T4. Gán onset/impact/end cho ít nhất vài clip ngã và đánh dấu ADL/hard negative. Tạo extract.py trích một clip ra .npz, kiểm shape/timestamp/validity. Chạy nền phần còn lại nếu pilot tốt; không để việc tải dataset chặn việc giao baseline pose. 
 
-- T5. Cuối ngày 5 bàn giao model path, contract, lệnh smoke và một cache mẫu cho SV2; cùng chạy backend với mock và pose độc lập. Các file checkpoint nhánh A chỉ tạo sau khi train thật, không tạo placeholder giả giống weights. 
+- T5. Cuối ngày 5 bàn giao model path, contract, lệnh smoke và một cache mẫu cho SV2; cùng chạy backend với mock và pose độc lập. Weights pretrained phải tải từ nguồn chính thức và load được, không tạo placeholder giả giống weights. 
 
 #### E. File, thành phần và hợp đồng I/O 
 
-**File:** `configs/ai.yaml` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Model, cửa sổ và ngưỡng luật/xác nhận. Thành phần chính: mode; sample_hz; thresholds. I/O: YAML → detector/state machine config. Được dùng bởi/tại: backend/ai/factory.py; state_machine.py. Kiểm chứng: A/B đổi bằng config; không hardcode ngưỡng. 
-
-**File:** `configs/train.yaml` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Seed, split, batch và siêu tham số train. Thành phần chính: seed; epochs; learning_rate. I/O: Cấu hình → dataset/train/evaluate. Được dùng bởi/tại: training/train.py. Kiểm chứng: Seed/split/feature_version được khóa cùng checkpoint. 
+**File:** `configs/ai.yaml` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Model, cửa sổ và ngưỡng luật/xác nhận. Thành phần chính: mode; sample_hz; thresholds. I/O: YAML → detector/state machine config. Được dùng bởi/tại: backend/ai/factory.py; state_machine.py. Kiểm chứng: Pretrained và ngưỡng đặt bằng config; không hardcode ngưỡng. 
 
 **File:** `backend/contracts.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: FramePacket, candidate/update và DTO event. Thành phần chính: FramePacket; FallCandidate; DetectionUpdate. I/O: Numpy nội bộ → DTO tách riêng cho network. Được dùng bởi/tại: AI, pipeline, API. Kiểm chứng: SV2 parse được output mock cùng schema_version. 
 
-**File:** `backend/ai/interface.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Protocol detector và scorer thay thế được. Thành phần chính: FallDetector; SequenceScorer. I/O: Frame/window → DetectionUpdate/score. Được dùng bởi/tại: factory, mock, pretrained, trained. Kiểm chứng: Mock/B/A cùng interface; backend không import TCN trực tiếp. 
+**File:** `backend/ai/interface.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Protocol detector và scorer thay thế được. Thành phần chính: FallDetector; SequenceScorer. I/O: Frame/window → DetectionUpdate/score. Được dùng bởi/tại: factory, mock, pretrained. Kiểm chứng: Mock/pretrained cùng interface; backend không import chi tiết pose trực tiếp. 
 
 **File:** `backend/ai/mock.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Output giả có nhãn is_test ở nguồn phát triển. Thành phần chính: MockDetector.process/reset/close. I/O: Chuỗi fixture → candidate/status xác định. Được dùng bởi/tại: factory; test tích hợp T1. Kiểm chứng: Không bật mock trong nghiệm thu AI thật. 
 
-**File:** `backend/ai/pose.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Load pose một lần, box/keypoint và track ID. Thành phần chính: PoseEstimator.estimate/reset/close. I/O: Frame BGR → tracked poses COCO17. Được dùng bởi/tại: pretrained và trained adapters. Kiểm chứng: Không có người/ID/khớp thiếu không crash. 
+**File:** `backend/ai/pose.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Load pose một lần, box/keypoint và track ID. Thành phần chính: PoseEstimator.estimate/reset/close. I/O: Frame BGR → tracked poses COCO17. Được dùng bởi/tại: pretrained adapter. Kiểm chứng: Không có người/ID/khớp thiếu không crash. 
 
-**File:** `backend/ai/buffer.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Cửa sổ theo track/session có timestamp. Thành phần chính: PoseBuffer.add/window/reset. I/O: Pose + time → 30 mốc/quality. Được dùng bởi/tại: Cả hai detector và feature extractor. Kiểm chứng: Không nối qua gap; không đếm trùng frame_id. 
+**File:** `backend/ai/buffer.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Cửa sổ theo track/session có timestamp. Thành phần chính: PoseBuffer.add/window/reset. I/O: Pose + time → 30 mốc/quality. Được dùng bởi/tại: Pretrained detector và feature extractor. Kiểm chứng: Không nối qua gap; không đếm trùng frame_id. 
 
-**File:** `backend/ai/factory.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Tạo mock/B/A theo config. Thành phần chính: create_detector(settings). I/O: Config/model path → FallDetector. Được dùng bởi/tại: backend/main.py. Kiểm chứng: Không load model mỗi request; báo lỗi rõ. 
+**File:** `backend/ai/factory.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Tạo mock/pretrained theo config. Thành phần chính: create_detector(settings). I/O: Config/model path → FallDetector. Được dùng bởi/tại: backend/main.py. Kiểm chứng: Không load model mỗi request; báo lỗi rõ. 
 
-**File:** `training/manifest.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Lập danh sách clip, nguồn và group chống leakage. Thành phần chính: build_manifest; validate_groups. I/O: RGB sequences/clip metadata → clips.csv. Được dùng bởi/tại: extract; split generation. Kiểm chứng: Một clip/2 góc cùng sự kiện chung group. 
+**File:** `evaluation/manifest.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Lập danh sách clip, nguồn và group chống leakage. Thành phần chính: build_manifest; validate_groups. I/O: RGB sequences/clip metadata → clips.csv. Được dùng bởi/tại: extract; split generation. Kiểm chứng: Một clip/2 góc cùng sự kiện chung group. 
 
 **File:** `data/manifests/clips.csv` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Manifest dữ liệu nguồn có provenance. Thành phần chính: 
 
-clip_id,path,group_id,subject_id,camera_id,fps. I/O: Metadata clip → loader/split. Được dùng 
+clip_id,path,group_id,subject_id,camera_id,fps. I/O: Metadata clip → loader/split. Được dùng bởi/tại: manifest.py; extract.py. Kiểm chứng: FPS/nhóm có giá trị xác minh; unknown được ghi rõ. 
 
-bởi/tại: manifest.py; extract.py. Kiểm chứng: FPS/nhóm có giá trị xác minh; unknown được ghi rõ. 
+**File:** `data/labels/intervals.csv` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Nhãn onset/impact/end và hard negative. Thành phần chính: clip_id,onset_s,impact_s,end_s,label. I/O: Quan sát video → interval đã soát. Được dùng bởi/tại: evaluation/extract; evaluate. Kiểm chứng: Không gắn mọi frame clip ngã là positive. 
 
-**File:** `data/labels/intervals.csv` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Nhãn onset/impact/end và hard negative. Thành phần chính: clip_id,onset_s,impact_s,end_s,label. I/O: Quan sát video → interval đã soát. Được dùng bởi/tại: training/extract; evaluate. Kiểm chứng: Không gắn mọi frame clip ngã là positive. 
+**File:** `data/splits.json` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Validation/test theo group và seed. Thành phần chính: val_groups; test_groups. I/O: Manifest → split độc lập recording. Được dùng bởi/tại: evaluate. Kiểm chứng: Group giao nhau rỗng, khóa trước tuning. 
 
-**File:** `data/splits.json` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Train/val/test theo group và seed. Thành phần chính: train_groups; val_groups; test_groups. I/O: Manifest → split độc lập recording. Được dùng bởi/tại: dataset; train; evaluate. Kiểm chứng: Group giao nhau rỗng, khóa trước tuning. 
+**File:** `evaluation/extract.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Trích pose/features đúng timestamp. Thành phần chính: extract_clip; save_features. I/O: RGB/MP4 + labels → .npz có timestamps. Được dùng bởi/tại: PoseEstimator; normalize_window. Kiểm chứng: Có thể resume; không tải lại model mỗi clip. 
 
-**File:** `training/extract.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Trích pose/features đúng timestamp. Thành phần chính: extract_clip; save_features. I/O: RGB/MP4 + labels → .npz có timestamps. Được dùng bởi/tại: PoseEstimator; normalize_window. Kiểm chứng: Có thể resume; không tải lại model mỗi clip. 
-
-**File:** `data/features/*.npz` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Cache sinh tự động cho từng clip. Thành phần chính: features,timestamps,validity,labels. I/O: Clip + pose → numpy arrays. Được dùng bởi/tại: training/dataset.py. Kiểm chứng: Shape/thời gian khớp; không commit data lớn. 
+**File:** `data/features/*.npz` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Cache sinh tự động cho từng clip. Thành phần chính: features,timestamps,validity,labels. I/O: Clip + pose → numpy arrays. Được dùng bởi/tại: evaluation/evaluate.py. Kiểm chứng: Shape/thời gian khớp; không commit data lớn. 
 
 **File:** `scripts/ai_smoke.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Chạy 1 clip độc lập để thấy pose/status. Thành phần chính: main --source --mode. I/O: Video/camera → preview/terminal counters. Được dùng bởi/tại: Detector interface. Kiểm chứng: Không cần backend/app để debug AI. 
 
 **File:** `models/yolo11n-pose.pt` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Weights pose tải từ nguồn chính thức. Thành phần chính: Binary model, không tự viết code. I/O: Frame → pretrained pose. Được dùng bởi/tại: PoseEstimator. Kiểm chứng: Ghi nguồn/hash, load được offline sau tải. 
 
-**File:** `evaluation/cases.csv` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Danh sách ca test có ground truth/tập dữ liệu. Thành phần chính: case_id,clip_id,split,expected,interval. I/O: Video kiểm chứng → test cases. Được dùng bởi/tại: training/evaluate; cả nhóm. Kiểm chứng: Có ngã, ADL, nằm sẵn, che khuất; không dùng test tuning. 
+**File:** `evaluation/cases.csv` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Danh sách ca test có ground truth/tập dữ liệu. Thành phần chính: case_id,clip_id,split,expected,interval. I/O: Video kiểm chứng → test cases. Được dùng bởi/tại: evaluation/evaluate; cả nhóm. Kiểm chứng: Có ngã, ADL, nằm sẵn, che khuất; không dùng test tuning. 
 
 Các file sinh tự động hoặc file dữ liệu trong danh sách là đầu ra của lệnh/script tương ứng; không yêu cầu viết tay nhị phân weights, lockfile, cache hoặc cấu hình Firebase. Các __init__.py rỗng và skeleton Android do Flutter tạo được tạo theo cấu trúc chuẩn, không có nghiệp vụ riêng. 
 
 #### F. Thứ tự, phụ thuộc và stub 
 
-Ngày 1 học ảnh và chạy pose; ngày 2 chốt interface/mock với SV2; ngày 3 xác minh dataset/nhãn/split; ngày 4 pilot extraction; ngày 5 test và bàn giao. Trong khi mạng tải dataset, tiếp tục T2/T1. Nếu downloader lỗi, dùng một clip nhóm tự quay an toàn để kiểm pipeline, đồng thời đánh dấu nhánh A chưa đủ dữ liệu; không gọi đó là validation độc lập. 
+Ngày 1 học ảnh và chạy pose; ngày 2 chốt interface/mock với SV2; ngày 3 xác minh dataset/nhãn/split; ngày 4 pilot extraction; ngày 5 test và bàn giao. Trong khi mạng tải dataset, tiếp tục T2/T1. Nếu downloader lỗi, dùng một clip nhóm tự quay an toàn để kiểm pipeline, đồng thời đánh dấu chưa đủ dữ liệu đánh giá; không gọi đó là validation độc lập. 
 
 #### G. Kiểm thử sau khi hoàn thành 
 
@@ -704,7 +751,7 @@ Có file pose/interface/mock/buffer/factory cơ bản, ai_smoke chạy được,
 
 #### I. Điều kiện hoàn thành, rủi ro và dự phòng 
 
-PASS khi ba ví dụ contract đều chạy, pose đọc clip hết không crash, có ít nhất một cache đúng schema và split không trùng group. Nếu dataset chưa tải được cuối ngày 3, giữ nhánh B là P0 và giới hạn A ở pilot dữ liệu đến ngày 5; tiếp tục tìm nguồn hợp lệ trong giờ đã dành, không lấy tuần 3 làm tuần cài môi trường. Không tự nhận model phát hiện ngã chỉ vì skeleton đã vẽ được. 
+PASS khi ba ví dụ contract đều chạy, pose đọc clip hết không crash, có ít nhất một cache đúng schema và split không trùng group. Nếu dataset chưa tải được cuối ngày 3, tiếp tục tích hợp pretrained model P0 và giữ phần dữ liệu ở mức pilot đến ngày 5; tiếp tục tìm nguồn hợp lệ trong giờ đã dành, không lấy tuần 3 làm tuần cài môi trường. Không tự nhận model phát hiện ngã chỉ vì skeleton đã vẽ được. 
 
 ### 6.1.2. Tuần 1 — SV2: Backend, RTSP và ghép thiết bị chạy từ điện thoại 
 
@@ -740,7 +787,7 @@ reader.py cung cấp FramePacket cho interface SV1; latest.py cho cả AI và pr
 
 #### E. File, thành phần và hợp đồng I/O 
 
-**File:** `pyproject.toml` — Tạo mới; SV2 chịu trách nhiệm. Chức năng: Khai báo package Python và dải Python 3.11. Thành phần chính: project; tool.pytest.ini_options. I/O: Không có hàm; đầu vào metadata, đầu ra môi trường cài được. Được dùng bởi/tại: pip và pytest. Kiểm chứng: Import backend/training từ root ổn định. 
+**File:** `pyproject.toml` — Tạo mới; SV2 chịu trách nhiệm. Chức năng: Khai báo package Python và dải Python 3.11. Thành phần chính: project; tool.pytest.ini_options. I/O: Không có hàm; đầu vào metadata, đầu ra môi trường cài được. Được dùng bởi/tại: pip và pytest. Kiểm chứng: Import backend/evaluation từ root ổn định. 
 
 **File:** `requirements.lock.txt` — Tạo mới; SV2 chịu trách nhiệm. Chức năng: Khóa dependency sau smoke test. Thành phần chính: pip freeze/pip install -r. I/O: Bộ package đã kiểm tra → phiên bản chính xác. Được dùng bởi/tại: Mọi laptop backend/AI. Kiểm chứng: Cài lại trên môi trường sạch, import được. 
 
@@ -794,7 +841,7 @@ Các file sinh tự động hoặc file dữ liệu trong danh sách là đầu 
 
 #### F. Thứ tự, phụ thuộc và stub 
 
-T1 chạy trước; T2 làm song song với SV1 bằng mock; T3 sau reader; T4 pair contract phải gửi SV3 ngày 2, có thể dùng claim stub trong vài giờ rồi thay SQLite trước nghiệm thu ngày 5; T5 phối hợp SV3 cuối tuần. Không yêu cầu AI A/B đã xong mới tạo API/WS. Việc tạo project Firebase và credentials do SV2/SV3 phối hợp từ ngày 3. 
+T1 chạy trước; T2 làm song song với SV1 bằng mock; T3 sau reader; T4 pair contract phải gửi SV3 ngày 2, có thể dùng claim stub trong vài giờ rồi thay SQLite trước nghiệm thu ngày 5; T5 phối hợp SV3 cuối tuần. Không yêu cầu AI pretrained đã xong mới tạo API/WS. Việc tạo project Firebase và credentials do SV2/SV3 phối hợp từ ngày 3. 
 
 #### G. Kiểm thử sau khi hoàn thành 
 
@@ -904,11 +951,11 @@ một push có nhãn thử. APK debug có thể cài lại trên đúng thiết 
 
 PASS khi luồng mở app → pair → status/WS → push test chạy trên máy. Nếu UI thiếu thời gian, giữ hai màn hình và text status, bỏ trang settings riêng. Nếu điện thoại không có Google Play services, dùng máy khác/emulator có Google Play để xác minh, nhưng tuần 3 vẫn phải thử một điện thoại thật phù hợp. Không đổi sang web app chỉ để tránh cấu hình Android. 
 
-### 6.2.1. Tuần 2 — SV1: Hai scorer ngã, xác nhận theo thời gian và model A đầu tiên 
+### 6.2.1. Tuần 2 — SV1: Pretrained model, xác nhận ngã theo thời gian và đánh giá 
 
 #### A. Mục tiêu của tuần 
 
-Có baseline B phát hiện diễn biến nghi ngã trên video; nhánh A có dataset loader, TCN nhỏ, training/validation và adapter nếu pilot dữ liệu đạt. Hai hướng trả cùng candidate cho state machine. Dành 6 giờ B/features/state, 8 giờ A/train, 4 giờ đánh giá và 2 giờ bàn giao. Không train hai pose model và hai hệ thống riêng. 
+Có pipeline dùng pose pretrained phát hiện diễn biến nghi ngã trên video, trả candidate cho state machine và có validation thật. Dành 6 giờ features/state, 8 giờ tích hợp pretrained model và kiểm thử, 4 giờ đánh giá và 2 giờ bàn giao. Giữ nguyên weights pretrained, không tự train hoặc fine-tune model. 
 
 #### B. Kiến thức cần học 
 
@@ -916,93 +963,77 @@ Có baseline B phát hiện diễn biến nghi ngã trên video; nhánh A có da
 
 - Học finite state machine, hysteresis và latch: điểm vượt ngưỡng trong một frame khác với bằng chứng duy trì 2 giây. Hiểu vì sao cooldown riêng không chặn được báo lại mỗi phút cho cùng người đang nằm. 
 
-- Nhánh A: tensor [N,C,T], Dataset/DataLoader, Conv1d, logits, BCEWithLogitsLoss, optimizer, backward/step, train/eval, no_grad và early stopping. Cần hiểu forward/loss/gradient ở mức sửa script; không cần chứng minh toàn bộ convolution hay tự viết autograd. 
-
 - Học precision, recall, F1, confusion matrix và event matching; accuracy của frame không thay cho số lần báo nhầm/giờ. Học group split, class imbalance và dùng validation chọn threshold, test chỉ đánh giá cuối. 
 
 #### C. Áp dụng trực tiếp vào project 
 
-features.py chuẩn hóa cùng cách cho extraction/runtime; pretrained.py biến feature thành rule_score; trained.py gọi FallTCN rồi chuyển logits thành score chưa hiệu chuẩn. state_machine.py dùng chung để output của hai nhánh đều qua xác nhận/latch. SV2 nhận DetectionUpdate từ detector đã chọn mà không phải biết Conv1d hay dataset. 
+features.py chuẩn hóa cùng cách cho extraction/runtime; pretrained.py biến feature thành rule_score. state_machine.py áp dụng xác nhận/latch cho candidate. SV2 nhận DetectionUpdate từ detector pretrained mà không phải biết chi tiết pose hoặc feature. 
 
 #### D. Công việc lập trình cụ thể 
 
-- T1. Viết extract_kinematics/normalize_window; test vai/hông thiếu, Δt=0, người đứng/ngang và frame gap. So feature cùng clip ở offline và realtime replay; chỉ chuyển sang train khi feature_version đã ổn. 
+- T1. Viết extract_kinematics/normalize_window; test vai/hông thiếu, Δt=0, người đứng/ngang và frame gap. So feature cùng clip ở offline và realtime replay; chỉ chuyển sang đánh giá khi feature_version đã ổn. 
 
-- T2. Cài RuleScorer theo bằng chứng onset + tư thế thấp; đặt ngưỡng trong config. Viết state machine và test nằm sẵn/cúi nhanh/ngồi nhanh/gap/latch. Cho SV2 import B trong ngày 8, không chờ training. 
+- T2. Cài RuleScorer theo bằng chứng onset + tư thế thấp; đặt ngưỡng trong config. Viết state machine và test nằm sẵn/cúi nhanh/ngồi nhanh/gap/latch. Cho SV2 import detector pretrained trong ngày 8. 
 
-- T3. Hoàn tất cache, dataset window 30×54, chia theo data/splits.json; augment chỉ train. Viết FallTCN 2–3 block Conv1d nhỏ, train 2 epoch để kiểm loss và shape, sau đó tối đa khoảng 30 epoch có early stopping patience 5. 
+- T3. Hoàn tất cache và chia validation/test theo data/splits.json. Chạy replay với pretrained model, giữ nguyên weights và kiểm tra feature/timestamp khớp runtime. 
 
-- T4. Lưu best state_dict và meta; load lại trên CPU trong process mới, output gần bằng lần trước trong sai số số thực. Thêm TrainedDetector theo cùng interface; nếu metadata lệch, reject hoặc fallback B có thông báo. 
+- ● T4. Kiểm tra weights pretrained tải từ nguồn chính thức; load lại trên CPU trong process mới. Xác minh model path/hash và config; nếu model thiếu hoặc không tương thích, trả AI ERROR rõ ràng. 
 
-- T5. Sweep ngưỡng B/A trên validation và chạy episode replay cùng state machine. So false alarms, recall và thời gian inference trên cùng clip/máy. Lưu validation.json với số mẫu, không điền “độ chính xác kỳ vọng” thành kết quả thật. 
+- T5. Sweep ngưỡng của scorer luật trên validation và chạy episode replay cùng state machine. So false alarms, recall và thời gian inference trên cùng clip/máy. Lưu validation.json với số mẫu, không điền “độ chính xác kỳ vọng” thành kết quả thật. 
 
-- T6. Cổng ngày 10: chọn B mặc định; A chỉ được lên MVP nếu dữ liệu/split hợp lệ, load được, không tăng FP đáng kể, recall không kém trên validation và đáp ứng độ trễ. Không dùng test để chọn. Nếu mẫu ít hoặc kết quả không rõ, giữ B và tiếp tục A như nhánh đã có đường triển khai. 
+- T6. Cổng ngày 10: kiểm chứng pipeline pretrained trên validation, ghi recall, FP và độ trễ; chốt cấu hình MVP theo kết quả đo. Không dùng test để chọn ngưỡng. Nếu mẫu ít hoặc kết quả không rõ, giữ nguyên weights pretrained và ghi rõ giới hạn đánh giá. 
 
 #### E. File, thành phần và hợp đồng I/O 
 
-**File:** `configs/ai.yaml` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Model, cửa sổ và ngưỡng luật/xác nhận. Thành phần chính: mode; sample_hz; thresholds. I/O: YAML → detector/state machine config. Được dùng bởi/tại: backend/ai/factory.py; state_machine.py. Kiểm chứng: A/B đổi bằng config; không hardcode ngưỡng. 
-
-**File:** `configs/train.yaml` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Seed, split, batch và siêu tham số train. Thành phần chính: seed; epochs; learning_rate. I/O: Cấu hình → dataset/train/evaluate. Được dùng bởi/tại: training/train.py. Kiểm chứng: Seed/split/feature_version được khóa cùng checkpoint. 
+**File:** `configs/ai.yaml` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Model, cửa sổ và ngưỡng luật/xác nhận. Thành phần chính: mode; sample_hz; thresholds. I/O: YAML → detector/state machine config. Được dùng bởi/tại: backend/ai/factory.py; state_machine.py. Kiểm chứng: Pretrained và ngưỡng đặt bằng config; không hardcode ngưỡng. 
 
 **File:** `backend/contracts.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: FramePacket, candidate/update và DTO event. Thành phần chính: FramePacket; FallCandidate; DetectionUpdate. I/O: Numpy nội bộ → DTO tách riêng cho network. Được dùng bởi/tại: AI, pipeline, API. Kiểm chứng: SV2 parse được output mock cùng schema_version. 
 
-**File:** `backend/ai/interface.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Protocol detector và scorer thay thế được. Thành phần chính: FallDetector; SequenceScorer. I/O: Frame/window → DetectionUpdate/score. Được dùng bởi/tại: factory, mock, pretrained, trained. Kiểm chứng: Mock/B/A cùng interface; backend không import TCN trực tiếp. 
+**File:** `backend/ai/interface.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Protocol detector và scorer thay thế được. Thành phần chính: FallDetector; SequenceScorer. I/O: Frame/window → DetectionUpdate/score. Được dùng bởi/tại: factory, mock, pretrained. Kiểm chứng: Mock/pretrained cùng interface; backend không import chi tiết pose trực tiếp. 
 
 **File:** `backend/ai/mock.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Output giả có nhãn is_test ở nguồn phát triển. Thành phần chính: MockDetector.process/reset/close. I/O: Chuỗi fixture → candidate/status xác định. Được dùng bởi/tại: factory; test tích hợp T1. Kiểm chứng: Không bật mock trong nghiệm thu AI thật. 
 
-**File:** `backend/ai/pose.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Load pose một lần, box/keypoint và track ID. Thành phần chính: PoseEstimator.estimate/reset/close. I/O: Frame BGR → tracked poses COCO17. Được dùng bởi/tại: pretrained và trained adapters. Kiểm chứng: Không có người/ID/khớp thiếu không crash. 
+**File:** `backend/ai/pose.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Load pose một lần, box/keypoint và track ID. Thành phần chính: PoseEstimator.estimate/reset/close. I/O: Frame BGR → tracked poses COCO17. Được dùng bởi/tại: pretrained adapter. Kiểm chứng: Không có người/ID/khớp thiếu không crash. 
 
-**File:** `backend/ai/buffer.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Cửa sổ theo track/session có timestamp. Thành phần chính: PoseBuffer.add/window/reset. I/O: Pose + time → 30 mốc/quality. Được dùng bởi/tại: Cả hai detector và feature extractor. Kiểm chứng: Không nối qua gap; không đếm trùng frame_id. 
+**File:** `backend/ai/buffer.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Cửa sổ theo track/session có timestamp. Thành phần chính: PoseBuffer.add/window/reset. I/O: Pose + time → 30 mốc/quality. Được dùng bởi/tại: Pretrained detector và feature extractor. Kiểm chứng: Không nối qua gap; không đếm trùng frame_id. 
 
-**File:** `backend/ai/features.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Feature/chuẩn hóa dùng chung train và runtime. Thành phần chính: extract_kinematics; normalize_window. 
-
-I/O: Pose window → kinematics + [30,54]. Được dùng bởi/tại: training/extract, dataset; scorer A/B. Kiểm chứng: Cùng clip tạo feature giống offline/online. 
+**File:** `backend/ai/features.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Feature/chuẩn hóa dùng chung đánh giá offline và runtime. Thành phần chính: extract_kinematics; normalize_window. I/O: Pose window → kinematics + [30,54]. Được dùng bởi/tại: evaluation/extract; scorer luật. Kiểm chứng: Cùng clip tạo feature giống offline/online. 
 
 **File:** `backend/ai/pretrained.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Scorer luật dùng pose pretrained. Thành phần chính: RuleScorer.score; PretrainedDetector.process. I/O: Feature/history → candidate rule_score. Được dùng bởi/tại: factory; pipeline qua interface. Kiểm chứng: Không kết luận ngã từ một pose nằm. 
 
-**File:** `backend/ai/trained.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Adapter load TCN và kiểm metadata. Thành phần chính: TrainedDetector.process; load_checkpoint. I/O: Window [30,54] → uncalibrated_model_score. Được dùng bởi/tại: factory; pipeline qua interface. Kiểm chứng: A/B đổi config; checkpoint thiếu quay B rõ ràng. 
-
 **File:** `backend/ai/state_machine.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Xác nhận, latch episode, recovery. Thành phần chính: FallStateMachine.update/reset. I/O: Candidate + monotonic timestamp → transition. Được dùng bởi/tại: pipeline; tests/test_ai_sequence.py. Kiểm chứng: Giữ nằm không báo lặp; gap không tăng confirmation. 
 
-**File:** `backend/ai/factory.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Tạo mock/B/A theo config. Thành phần chính: create_detector(settings). I/O: Config/model path → FallDetector. Được dùng bởi/tại: backend/main.py. Kiểm chứng: Không load model mỗi request; báo lỗi rõ. 
+**File:** `backend/ai/factory.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Tạo mock/pretrained theo config. Thành phần chính: create_detector(settings). I/O: Config/model path → FallDetector. Được dùng bởi/tại: backend/main.py. Kiểm chứng: Không load model mỗi request; báo lỗi rõ. 
 
-**File:** `backend/ai/tcn.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Kiến trúc phân loại chuỗi nhỏ dùng chung. Thành phần chính: FallTCN.forward. I/O: Tensor [N,54,30] → logits [N,1]. Được dùng bởi/tại: training/train; trained.py. Kiểm chứng: Forward CPU chạy được; shape có kiểm tra. 
-
-**File:** `training/manifest.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Lập danh sách clip, nguồn và group chống leakage. Thành phần chính: build_manifest; validate_groups. I/O: RGB sequences/clip metadata → clips.csv. Được dùng bởi/tại: extract; split generation. Kiểm chứng: Một clip/2 góc cùng sự kiện chung group. 
+**File:** `evaluation/manifest.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Lập danh sách clip, nguồn và group chống leakage. Thành phần chính: build_manifest; validate_groups. I/O: RGB sequences/clip metadata → clips.csv. Được dùng bởi/tại: extract; split generation. Kiểm chứng: Một clip/2 góc cùng sự kiện chung group. 
 
 **File:** `data/manifests/clips.csv` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Manifest dữ liệu nguồn có provenance. Thành phần chính: clip_id,path,group_id,subject_id,camera_id,fps. I/O: Metadata clip → loader/split. Được dùng bởi/tại: manifest.py; extract.py. Kiểm chứng: FPS/nhóm có giá trị xác minh; unknown được ghi rõ. 
 
-**File:** `data/labels/intervals.csv` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Nhãn onset/impact/end và hard negative. Thành phần chính: clip_id,onset_s,impact_s,end_s,label. I/O: Quan sát video → interval đã soát. Được dùng bởi/tại: training/extract; evaluate. Kiểm chứng: Không gắn mọi frame clip ngã là positive. 
+**File:** `data/labels/intervals.csv` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Nhãn onset/impact/end và hard negative. Thành phần chính: clip_id,onset_s,impact_s,end_s,label. I/O: Quan sát video → interval đã soát. Được dùng bởi/tại: evaluation/extract; evaluate. Kiểm chứng: Không gắn mọi frame clip ngã là positive. 
 
-**File:** `data/splits.json` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Train/val/test theo group và seed. Thành phần chính: train_groups; val_groups; test_groups. I/O: Manifest → split độc lập recording. Được dùng bởi/tại: dataset; train; evaluate. Kiểm chứng: Group giao nhau rỗng, khóa trước tuning. 
+**File:** `data/splits.json` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Validation/test theo group và seed. Thành phần chính: val_groups; test_groups. I/O: Manifest → split độc lập recording. Được dùng bởi/tại: evaluate. Kiểm chứng: Group giao nhau rỗng, khóa trước tuning. 
 
-**File:** `training/extract.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Trích pose/features đúng timestamp. Thành phần chính: extract_clip; save_features. I/O: RGB/MP4 + labels → .npz có timestamps. Được dùng bởi/tại: PoseEstimator; normalize_window. Kiểm chứng: Có thể resume; không tải lại model mỗi clip. 
+**File:** `evaluation/extract.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Trích pose/features đúng timestamp. Thành phần chính: extract_clip; save_features. I/O: RGB/MP4 + labels → .npz có timestamps. Được dùng bởi/tại: PoseEstimator; normalize_window. Kiểm chứng: Có thể resume; không tải lại model mỗi clip. 
 
-**File:** `data/features/*.npz` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Cache sinh tự động cho từng clip. Thành phần chính: features,timestamps,validity,labels. I/O: Clip + pose → numpy arrays. Được dùng bởi/tại: training/dataset.py. Kiểm chứng: Shape/thời gian khớp; không commit data lớn. 
+**File:** `data/features/*.npz` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Cache sinh tự động cho từng clip. Thành phần chính: features,timestamps,validity,labels. I/O: Clip + pose → numpy arrays. Được dùng bởi/tại: evaluation/evaluate.py. Kiểm chứng: Shape/thời gian khớp; không commit data lớn. 
 
-**File:** `training/dataset.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Loader cửa sổ, nhãn, augment chỉ train. Thành phần chính: FallWindowDataset.__getitem__. I/O: Cache + split → X [54,30], y, sample weight. Được dùng bởi/tại: DataLoader trong train/evaluate. Kiểm chứng: Val/test không augment; scaler chỉ fit train nếu dùng. 
-
-**File:** `training/train.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Train TCN nhỏ, early stopping và lưu best. Thành phần chính: train_epoch; validate_epoch; main. I/O: Dataset/config → state_dict + meta. Được dùng bởi/tại: FallTCN; DataLoader. Kiểm chứng: Loss hữu hạn; best theo val, không chọn theo test. 
-
-**File:** `training/evaluate.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Đánh giá window và episode theo cùng logic runtime. Thành phần chính: evaluate_windows; replay_events; summarize. I/O: Model/B + clips → precision/recall/FP/latency. Được dùng bởi/tại: Cả hai nhánh; configs/ai.yaml. Kiểm chứng: One-to-one matching event; bỏ is_test. 
+**File:** `evaluation/evaluate.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Đánh giá window và episode theo cùng logic runtime. Thành phần chính: evaluate_windows; replay_events; summarize. I/O: Pretrained + clips → precision/recall/FP/latency. Được dùng bởi/tại: Pretrained pipeline; configs/ai.yaml. Kiểm chứng: One-to-one matching event; bỏ is_test. 
 
 **File:** `scripts/ai_smoke.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Chạy 1 clip độc lập để thấy pose/status. Thành phần chính: main --source --mode. I/O: Video/camera → preview/terminal counters. Được dùng bởi/tại: Detector interface. Kiểm chứng: Không cần backend/app để debug AI. 
 
-**File:** `models/fall_tcn.pt` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Checkpoint nhánh A sinh từ training. Thành phần chính: state_dict do torch.save. I/O: Model đã train → adapter CPU/GPU. Được dùng bởi/tại: TrainedDetector. Kiểm chứng: Load lại cho output gần như tương đương; không giả file khi train chưa xong. 
-
-**File:** `models/fall_tcn.meta.json` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Hợp đồng weights/feature và threshold validation. Thành phần chính: feature_version; sample_hz; class_map; seed. I/O: Training/validation → metadata. Được dùng bởi/tại: TrainedDetector.load_checkpoint. Kiểm chứng: Từ chối shape/version không khớp. 
-
-**File:** `evaluation/cases.csv` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Danh sách ca test có ground truth/tập dữ liệu. Thành phần chính: case_id,clip_id,split,expected,interval. I/O: Video kiểm chứng → test cases. Được dùng bởi/tại: training/evaluate; cả nhóm. Kiểm chứng: Có ngã, ADL, nằm sẵn, che khuất; không dùng test tuning. 
+**File:** `evaluation/cases.csv` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Danh sách ca test có ground truth/tập dữ liệu. Thành phần chính: case_id,clip_id,split,expected,interval. I/O: Video kiểm chứng → test cases. Được dùng bởi/tại: evaluation/evaluate; cả nhóm. Kiểm chứng: Có ngã, ADL, nằm sẵn, che khuất; không dùng test tuning. 
 
 **File:** `evaluation/validation.json` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Kết quả chọn ngưỡng/model trên val. Thành phần chính: Metrics, counts, model_id, config hash. I/O: Val predictions → kết quả đo. Được dùng bởi/tại: Cổng quyết định ngày 10/15. Kiểm chứng: Kèm denominator và thời gian; không chứa số bịa. 
 
-**File:** `tests/test_ai_sequence.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Test lỗi temporal và xác nhận meaningful. Thành phần chính: test_gap_resets; test_no_repeat; test_sit_vs_fall. I/O: Chuỗi timestamp/pose giả → transitions. Được dùng bởi/tại: pytest; state machine/features. Kiểm chứng: Không test từng getter; kiểm ca rớt mạng/lặp/góc thiếu. 
+**File:** `tests/test_ai_sequence.py` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Test lỗi temporal và xác nhận meaningful. Thành phần chính: test_gap_resets; test_no_repeat; 
+
+test_sit_vs_fall. I/O: Chuỗi timestamp/pose giả → transitions. Được dùng bởi/tại: pytest; state machine/features. Kiểm chứng: Không test từng getter; kiểm ca rớt mạng/lặp/góc thiếu. 
 
 Các file sinh tự động hoặc file dữ liệu trong danh sách là đầu ra của lệnh/script tương ứng; không yêu cầu viết tay nhị phân weights, lockfile, cache hoặc cấu hình Firebase. Các __init__.py rỗng và skeleton Android do Flutter tạo được tạo theo cấu trúc chuẩn, không có nghiệp vụ riêng. 
 
 #### F. Thứ tự, phụ thuộc và stub 
 
-Ngày 6–7 features/rules; ngày 8 bàn giao B và khởi tạo training A; ngày 9 train/evaluate/load; ngày 10 so sánh và chọn. B và state machine là đường găng; extraction có thể chạy nền trong khi viết B. Nếu SV2 chưa có RTSP ổn, chạy replay file với timestamp nguồn; nếu A chưa train được, TrainedDetector phải trả MODEL_UNAVAILABLE thay vì dự đoán giả. 
+Ngày 6–7 features/rules; ngày 8 bàn giao detector pretrained; ngày 9 load CPU/evaluate; ngày 10 chốt cấu hình theo validation. Pretrained detector và state machine là đường găng; extraction có thể chạy nền trong khi viết rules. Nếu SV2 chưa có RTSP ổn, chạy replay file với timestamp nguồn; nếu weights chưa tải được, detector phải trả MODEL_UNAVAILABLE thay vì dự đoán giả. 
 
 #### G. Kiểm thử sau khi hoàn thành 
 
@@ -1010,21 +1041,21 @@ Ngày 6–7 features/rules; ngày 8 bàn giao B và khởi tạo training A; ng�
 
 - Đang SUSPECTED rồi mất frame >0.3 giây → UNKNOWN/WARMUP, không confirmed nhờ đồng hồ chạy tiếp. Giữ người nằm 90 giây → một event episode. Đứng phục hồi đủ 3 giây, ngã mới sau cooldown → event mới. 
 
-- A: batch dummy [2,54,30] forward ra [2,1]; 2 epoch loss hữu hạn; train và val không chung group; load CPU chạy; missing weights/version mismatch có lỗi rõ. Không dùng cùng clip đã tuning làm test độc lập. 
+- Pretrained: load CPU chạy; feature/timestamp khớp offline và runtime; validation và test không chung group; missing weights/version mismatch có lỗi rõ. Không dùng cùng clip đã tuning làm test độc lập. 
 
 #### H. Deliverables và thao tác demo 
 
-B chạy từ ai_smoke và backend; feature/state/test module hoàn chỉnh; dataset loader/train/evaluate chạy tối thiểu pilot. Nếu dữ liệu đạt: có fall_tcn.pt/meta và kết quả validation thật. App nhận trạng thái ngã từ video AI thật; sự kiện push đầy đủ sẽ nối ở tuần 3. Demo đổi ai.mode trong config và restart, backend giữ nguyên API. 
+Detector pretrained chạy từ ai_smoke và backend; feature/state/test module hoàn chỉnh; evaluate chạy được trên video kiểm chứng và có kết quả validation thật. App nhận trạng thái ngã từ video AI thật; sự kiện push đầy đủ sẽ nối ở tuần 3. Demo ai.mode=pretrained trong config và restart, backend giữ nguyên API. 
 
 #### I. Điều kiện hoàn thành, rủi ro và dự phòng 
 
-PASS P0 khi B + state machine tích hợp và không báo lặp ở các ca đã nêu; nhánh A PASS thử nghiệm khi có train/load/validation thật, không đòi A thắng B. Nếu train vướng sau ngày 9, dừng mở rộng kiến trúc/dataset, hoàn thiện pilot rồi giữ B. Không cắt xác nhận theo thời gian hoặc bỏ hard negative để có con số đẹp. 
+PASS P0 khi pretrained detector + state machine tích hợp và không báo lặp ở các ca đã nêu; weights load thật và có validation thật. Nếu đánh giá vướng sau ngày 9, giữ pretrained model đã chốt và hoàn thiện kiểm thử trong phạm vi dữ liệu hiện có. Không cắt xác nhận theo thời gian hoặc bỏ hard negative để có con số đẹp. 
 
 ### 6.2.2. Tuần 2 — SV2: RTSP → AI thật → status và preview cho app 
 
 #### A. Mục tiêu của tuần 
 
-Thay MockDetector bằng B qua factory, giữ API không đổi; app thấy camera preview, trạng thái AI và candidate thật. Hoàn tất route camera config và contract tests; chuẩn bị điểm nối event service tuần 3. Phân bổ 6 giờ pipeline/threading, 4 giờ MJPEG, 4 giờ API/quyền, 4 giờ test/tối ưu và 2 giờ bàn giao. 
+Thay MockDetector bằng detector pretrained qua factory, giữ API không đổi; app thấy camera preview, trạng thái AI và candidate thật. Hoàn tất route camera config và contract tests; chuẩn bị điểm nối event service tuần 3. Phân bổ 6 giờ pipeline/threading, 4 giờ MJPEG, 4 giờ API/quyền, 4 giờ test/tối ưu và 2 giờ bàn giao. 
 
 #### B. Kiến thức cần học 
 
@@ -1042,7 +1073,7 @@ Pipeline gọi detector.process(packet), cập nhật AI state và truyền cand
 
 #### D. Công việc lập trình cụ thể 
 
-- T1. Thêm detector factory B vào startup, warmup và xử lý load lỗi; mock chỉ bật khi development. Nếu model thiếu, status AI ERROR rõ, camera vẫn có thể hiển thị. Không tạo event fall giả khi exception. 
+- T1. Thêm detector pretrained qua factory vào startup, warmup và xử lý load lỗi; mock chỉ bật khi development. Nếu model thiếu, status AI ERROR rõ, camera vẫn có thể hiển thị. Không tạo event fall giả khi exception. 
 
 - T2. Nối candidate/state machine; phát ai.status qua WS có schema, tạm hiện confirmed dạng update phát triển nhưng chưa dựng outbox. Giữ một API/event sample để SV3 viết coordinator trước. 
 
@@ -1060,7 +1091,9 @@ Pipeline gọi detector.process(packet), cập nhật AI state và truyền cand
 
 **File:** `configs/app.yaml` — Chỉnh sửa file đã có; SV2 chịu trách nhiệm. Chức năng: Timeout, camera, rate preview, runtime DB. Thành phần chính: Config keys tại Chương 2. I/O: YAML/env → AppSettings. Được dùng bởi/tại: backend/config.py. Kiểm chứng: Giá trị lỗi bị báo lúc startup. 
 
-**File:** `backend/main.py` — Chỉnh sửa file đã có; SV2 chịu trách nhiệm. Chức năng: Tạo FastAPI app và lifecycle worker. Thành phần chính: create_app(); lifespan(). I/O: Settings → app; startup/shutdown worker. Được dùng bởi/tại: Uvicorn. Kiểm chứng: Một worker, start/stop không nhân đôi camera. 
+**File:** `backend/main.py` — Chỉnh sửa file đã có; SV2 chịu trách nhiệm. Chức năng: Tạo FastAPI app và lifecycle worker. Thành phần chính: create_app(); lifespan(). I/O: Settings → 
+
+app; startup/shutdown worker. Được dùng bởi/tại: Uvicorn. Kiểm chứng: Một worker, start/stop không nhân đôi camera. 
 
 **File:** `backend/config.py` — Chỉnh sửa file đã có; SV2 chịu trách nhiệm. Chức năng: Nạp và kiểm tra config. Thành phần chính: AppSettings; load_settings(). I/O: YAML + env → settings typed. Được dùng bởi/tại: main, reader, pipeline. Kiểm chứng: Thiếu model/credential trả trạng thái rõ ràng. 
 
@@ -1086,11 +1119,11 @@ Các file sinh tự động hoặc file dữ liệu trong danh sách là đầu 
 
 #### F. Thứ tự, phụ thuộc và stub 
 
-Ngày 6 ổn reader/factory, ngày 7 preview, ngày 8 nhận B thật, ngày 9 config/status/test và ngày 10 tích hợp. Nếu B chậm, tiếp tục với MockDetector trong test hợp đồng nhưng demo phải phân biệt rõ; dành cửa sổ ngày 8 với SV1 để nối B. A có thể được nạp sau bằng config, không là điều kiện để MJPEG/app chạy. 
+Ngày 6 ổn reader/factory, ngày 7 preview, ngày 8 nhận pretrained detector thật, ngày 9 config/status/test và ngày 10 tích hợp. Nếu detector chậm, tiếp tục với MockDetector trong test hợp đồng nhưng demo phải phân biệt rõ; dành cửa sổ ngày 8 với SV1 để nối pretrained detector. 
 
 #### G. Kiểm thử sau khi hoàn thành 
 
-- Khởi động B, chạy RTSP có người và không người: status/WS không chứa numpy hay NaN. Không có frame mới thì ai không xử lý lại frame cũ để tích đủ xác nhận. 
+- Khởi động pretrained detector, chạy RTSP có người và không người: status/WS không chứa numpy hay NaN. Không có frame mới thì ai không xử lý lại frame cũ để tích đủ xác nhận. 
 
 - Hai máy xem preview, đóng một viewer: backend/AI còn chạy và viewer kia vẫn cập nhật. URL stream không khóa hoặc khóa sai trả 401/403; không trả ảnh dù /health công khai. 
 
@@ -1134,7 +1167,7 @@ Home gọi PUT camera và chờ status thay vì giả định request 202 là co
 
 - T4. AlertScreen hiển thị message/camera/time/is_test và nút Đã xem/Tắt âm thanh (âm sẽ nối T3). Candidate chỉ là “đang xác minh”, chưa hiện như alarm confirmed. 
 
-- T5. Nối WS update từ AI B, test reconnect và resume lấy status; cập nhật parser test với field thiếu/null/sai schema. Chốt fixture event cuối ngày 10 cho push mapping tuần 3. 
+- ● T5. Nối WS update từ AI pretrained, test reconnect và resume lấy status; cập nhật parser test với field thiếu/null/sai schema. Chốt fixture event cuối ngày 10 cho push mapping tuần 3. 
 
 #### E. File, thành phần và hợp đồng I/O 
 
@@ -1152,9 +1185,7 @@ Home gọi PUT camera và chờ status thay vì giả định request 202 là co
 
 **File:** `mobile/lib/services/notification_service.dart` — Chỉnh sửa file đã có; SV3 chịu trách nhiệm. Chức năng: FCM setup, permission, channel và token refresh. Thành phần chính: initialize; registerEndpoint; onMessage; onOpen. I/O: RemoteMessage/token → coordinator/API. Được dùng bởi/tại: main; AlertCoordinator. Kiểm chứng: Foreground/background/terminated thường nhận đúng, không nhận nhầm installation. 
 
-**File:** `mobile/lib/services/alert_coordinator.dart` — Tạo mới; SV3 chịu trách nhiệm. Chức năng: Một điểm nhận event từ WS/FCM/REST. Thành phần chính: handleEvent; 
-
-acknowledge; markSeen. I/O: FallEvent + app state → UI/audio một lần. Được dùng bởi/tại: WsClient; NotificationService; screens. Kiểm chứng: Cùng event từ hai kênh chỉ báo một lần ở foreground. 
+**File:** `mobile/lib/services/alert_coordinator.dart` — Tạo mới; SV3 chịu trách nhiệm. Chức năng: Một điểm nhận event từ WS/FCM/REST. Thành phần chính: handleEvent; acknowledge; markSeen. I/O: FallEvent + app state → UI/audio một lần. Được dùng bởi/tại: WsClient; NotificationService; screens. Kiểm chứng: Cùng event từ hai kênh chỉ báo một lần ở foreground. 
 
 **File:** `mobile/lib/screens/home_screen.dart` — Chỉnh sửa file đã có; SV3 chịu trách nhiệm. Chức năng: RTSP form, status, camera, setting và thử push. Thành phần chính: HomeScreen; refresh; configureCamera. I/O: Status/camera config → UI. Được dùng bởi/tại: ApiClient; WsClient; CameraView. Kiểm chứng: Phân biệt camera connected và AI ready; password che mặc định. 
 
@@ -1168,7 +1199,7 @@ Các file sinh tự động hoặc file dữ liệu trong danh sách là đầu 
 
 #### F. Thứ tự, phụ thuộc và stub 
 
-Làm UI/parse bằng fixture ngày 6, CameraView khi SV2 có stream ngày 7, nhận B thật ngày 8, coordinator/lifecycle ngày 9, ghép ngày 10. Khi backend chưa tạo event store, coordinator nhận fixture WS có is_test=true; không tự đổi candidate thành event thật ở điện thoại. Logic xác nhận thuộc backend. 
+Làm UI/parse bằng fixture ngày 6, CameraView khi SV2 có stream ngày 7, nhận pretrained thật ngày 8, coordinator/lifecycle ngày 9, ghép ngày 10. Khi backend chưa tạo event store, coordinator nhận fixture WS có is_test=true; không tự đổi candidate thành event thật ở điện thoại. Logic xác nhận thuộc backend. 
 
 #### G. Kiểm thử sau khi hoàn thành 
 
@@ -1176,7 +1207,7 @@ Làm UI/parse bằng fixture ngày 6, CameraView khi SV2 có stream ngày 7, nh�
 
 - Một event WS gửi lại ba lần → một banner; event khác installation → bỏ; candidate không hú. Home→background→resume không mở ba stream camera hay ba socket. 
 
-- Clip AI B thật qua RTSP → thấy trạng thái đổi trên app; không người vẫn xem được camera và status NO_PERSON/không candidate. Test parser với JSON thiếu reasons hoặc version không hỗ trợ. 
+- Clip AI pretrained thật qua RTSP → thấy trạng thái đổi trên app; không người vẫn xem được camera và status NO_PERSON/không candidate. Test parser với JSON thiếu reasons hoặc version không hỗ trợ. 
 
 #### H. Deliverables và thao tác demo 
 
@@ -1190,7 +1221,7 @@ PASS khi UI không giả “AI chạy tốt” từ camera connected, event/cand
 
 #### A. Mục tiêu của tuần 
 
-Ổn định model đã chọn, bàn giao transition tạo event thật; kiểm tra các ca ngồi/nằm/cúi, che khuất và thay ID. Nhánh A có tối đa 4 giờ cải tiến nếu pilot đã chạy; không mở thêm kiến trúc mới. Dành 8 giờ hard negatives, 6 giờ tích hợp, 4 giờ A và 2 giờ cập nhật đánh giá. 
+Ổn định pretrained model đã chọn, bàn giao transition tạo event thật; kiểm tra các ca ngồi/nằm/cúi, che khuất và thay ID. Giữ nguyên weights pretrained. Dành 8 giờ hard negatives, 6 giờ tích hợp, 4 giờ kiểm thử pretrained pipeline và 2 giờ cập nhật đánh giá. 
 
 #### B. Kiến thức cần học 
 
@@ -1199,8 +1230,6 @@ PASS khi UI không giả “AI chạy tốt” từ camera connected, event/cand
 - Học precision/recall tradeoff và threshold sweep. Đạt mức so cùng validation với cùng event tolerance trước/sau một thay đổi, không chỉ xem một video thuận lợi. 
 
 - ● Học track loss/ID churn, warmup sau reconnect và chất lượng pose. Hiểu invalid pose không được tính là immobility và ack app không phải tín hiệu người đã đứng lên. 
-
-- Nếu A tiếp tục: xem overfit, weighted loss/sampler một phương án, early stopping; không cần học Transformer/ST-GCN/3D-CNN ở tuần này. 
 
 #### C. Áp dụng trực tiếp vào project 
 
@@ -1214,35 +1243,27 @@ Scorer/state machine phải trả just_confirmed và episode_id đủ cho EventS
 
 - T3. Giao transition contract cho SV2: same episode lặp process không just_confirmed lại; recovery đủ 3 giây mới kết thúc latch. Cùng SV2 cố tình retry/create_once để kiểm chặn lặp cả AI và DB. 
 
-- T4. Nếu A có dữ liệu tốt, thử một điều chỉnh nhỏ như class weighting hoặc LR; so trên cùng val. Nếu A chưa vượt B rõ, giữ B, không dùng tuần 3 để thu thập dataset mới lớn. Điểm đóng băng A muộn nhất ngày 15. 
+- T4. Kiểm tra lại pretrained model và cấu hình trên cùng validation, ghi recall/FP và độ trễ. Giữ nguyên weights, không dùng tuần 3 để thu thập dataset mới lớn. Điểm đóng băng cấu hình muộn nhất ngày 15. 
 
 - T5. Kiểm tra timestamp thực khi RTSP tốc độ biến thiên; nếu thiếu mẫu/gap, UI AI degraded và không fake tiếp tục inference. Hạ imgsz và preview với SV2 khi CPU quá tải rồi chạy lại validation. 
 
 #### E. File, thành phần và hợp đồng I/O 
 
-**File:** `configs/ai.yaml` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Model, cửa sổ và ngưỡng luật/xác nhận. Thành phần chính: mode; sample_hz; thresholds. I/O: YAML → detector/state machine config. Được dùng bởi/tại: backend/ai/factory.py; state_machine.py. Kiểm chứng: A/B đổi bằng config; không hardcode ngưỡng. 
+**File:** `configs/ai.yaml` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Model, cửa sổ và ngưỡng luật/xác nhận. Thành phần chính: mode; sample_hz; thresholds. I/O: YAML → detector/state machine config. Được dùng bởi/tại: backend/ai/factory.py; state_machine.py. Kiểm chứng: Pretrained và ngưỡng đặt bằng config; không hardcode ngưỡng. 
 
 **File:** `backend/contracts.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: FramePacket, candidate/update và DTO event. Thành phần chính: FramePacket; FallCandidate; DetectionUpdate. I/O: Numpy nội bộ → DTO tách riêng cho network. Được dùng bởi/tại: AI, pipeline, API. Kiểm chứng: SV2 parse được output mock cùng schema_version. 
 
-**File:** `backend/ai/features.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Feature/chuẩn hóa dùng chung train và runtime. Thành phần chính: extract_kinematics; normalize_window. I/O: Pose window → kinematics + [30,54]. Được dùng bởi/tại: training/extract, dataset; scorer A/B. Kiểm chứng: Cùng clip tạo feature giống offline/online. 
+**File:** `backend/ai/features.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Feature/chuẩn hóa dùng chung đánh giá offline và runtime. Thành phần chính: extract_kinematics; normalize_window. I/O: Pose window → kinematics + [30,54]. Được dùng bởi/tại: evaluation/extract; scorer luật. Kiểm chứng: Cùng clip tạo feature giống offline/online. 
 
 **File:** `backend/ai/pretrained.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Scorer luật dùng pose pretrained. Thành phần chính: RuleScorer.score; PretrainedDetector.process. I/O: Feature/history → candidate rule_score. Được dùng bởi/tại: factory; pipeline qua interface. Kiểm chứng: Không kết luận ngã từ một pose nằm. 
 
-**File:** `backend/ai/trained.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Adapter load TCN và kiểm metadata. Thành phần chính: TrainedDetector.process; load_checkpoint. I/O: Window [30,54] → uncalibrated_model_score. Được dùng bởi/tại: factory; pipeline qua interface. Kiểm chứng: A/B đổi config; checkpoint thiếu quay B rõ ràng. 
-
 **File:** `backend/ai/state_machine.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Xác nhận, latch episode, recovery. Thành phần chính: FallStateMachine.update/reset. I/O: Candidate + monotonic timestamp → transition. Được dùng bởi/tại: pipeline; tests/test_ai_sequence.py. Kiểm chứng: Giữ nằm không báo lặp; gap không tăng confirmation. 
 
-**File:** `backend/ai/factory.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Tạo mock/B/A theo config. Thành phần chính: create_detector(settings). I/O: Config/model path → FallDetector. Được dùng bởi/tại: backend/main.py. Kiểm chứng: Không load model mỗi request; báo lỗi rõ. 
+**File:** `backend/ai/factory.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Tạo mock/pretrained theo config. Thành phần chính: create_detector(settings). I/O: Config/model path → FallDetector. Được dùng bởi/tại: backend/main.py. Kiểm chứng: Không load model mỗi request; báo lỗi rõ. 
 
-**File:** `training/train.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Train TCN nhỏ, early stopping và lưu best. Thành phần chính: train_epoch; validate_epoch; main. I/O: Dataset/config → state_dict + meta. Được dùng bởi/tại: FallTCN; DataLoader. Kiểm chứng: Loss hữu hạn; best theo val, không chọn theo test. 
+**File:** `evaluation/evaluate.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Đánh giá window và episode theo cùng logic runtime. Thành phần chính: evaluate_windows; replay_events; summarize. I/O: Pretrained + clips → precision/recall/FP/latency. Được dùng bởi/tại: Pretrained pipeline; configs/ai.yaml. Kiểm chứng: One-to-one matching event; bỏ is_test. 
 
-**File:** `training/evaluate.py` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Đánh giá window và episode theo cùng logic runtime. Thành phần chính: evaluate_windows; replay_events; summarize. I/O: Model/B + clips → precision/recall/FP/latency. Được dùng bởi/tại: Cả hai nhánh; configs/ai.yaml. Kiểm chứng: One-to-one matching event; bỏ is_test. 
-
-**File:** `models/fall_tcn.pt` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Checkpoint nhánh A sinh từ training. Thành phần chính: state_dict do torch.save. I/O: Model đã train → adapter CPU/GPU. Được dùng bởi/tại: TrainedDetector. Kiểm chứng: Load lại cho output gần như tương đương; không giả file khi train chưa xong. 
-
-**File:** `models/fall_tcn.meta.json` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Hợp đồng weights/feature và threshold validation. Thành phần chính: feature_version; sample_hz; class_map; seed. I/O: Training/validation → metadata. Được dùng bởi/tại: TrainedDetector.load_checkpoint. Kiểm chứng: Từ chối shape/version không khớp. 
-
-**File:** `evaluation/cases.csv` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Danh sách ca test có ground truth/tập dữ liệu. Thành phần chính: case_id,clip_id,split,expected,interval. I/O: Video kiểm chứng → test cases. Được dùng bởi/tại: training/evaluate; cả nhóm. Kiểm chứng: Có ngã, ADL, nằm sẵn, che khuất; không dùng test tuning. 
+**File:** `evaluation/cases.csv` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Danh sách ca test có ground truth/tập dữ liệu. Thành phần chính: case_id,clip_id,split,expected,interval. I/O: Video kiểm chứng → test cases. Được dùng bởi/tại: evaluation/evaluate; cả nhóm. Kiểm chứng: Có ngã, ADL, nằm sẵn, che khuất; không dùng test tuning. 
 
 **File:** `evaluation/validation.json` — Chỉnh sửa file đã có; SV1 chịu trách nhiệm. Chức năng: Kết quả chọn ngưỡng/model trên val. Thành phần chính: Metrics, counts, model_id, config hash. I/O: Val predictions → kết quả đo. Được dùng bởi/tại: Cổng quyết định ngày 10/15. Kiểm chứng: Kèm denominator và thời gian; không chứa số bịa. 
 
@@ -1252,7 +1273,7 @@ Các file sinh tự động hoặc file dữ liệu trong danh sách là đầu 
 
 #### F. Thứ tự, phụ thuộc và stub 
 
-Đầu ngày 11 khóa transition, ngày 12–13 hard negatives/tuning, ngày 14 tích hợp cảnh báo thật và thử phần cứng, ngày 15 khóa cấu hình MVP. Có thể làm A tối đa 4 giờ song song khi video test chạy; không chặn tích hợp FCM. Nếu SV2 chưa có EventService, trả danh sách transition trong test harness để người khác dùng fixture. 
+Đầu ngày 11 khóa transition, ngày 12–13 hard negatives/tuning, ngày 14 tích hợp cảnh báo thật và thử phần cứng, ngày 15 khóa cấu hình MVP. Dành tối đa 4 giờ kiểm thử pretrained pipeline khi video test chạy; không chặn tích hợp FCM. Nếu SV2 chưa có EventService, trả danh sách transition trong test harness để người khác dùng fixture. 
 
 #### G. Kiểm thử sau khi hoàn thành 
 
@@ -1336,7 +1357,9 @@ GOOGLE_APPLICATION_CREDENTIALS; APP_ENV. I/O: Ví dụ env → config loader. Đ
 
 **File:** `backend/alerts/fcm.py` — Chỉnh sửa file đã có; SV2 chịu trách nhiệm. Chức năng: Sender FCM: smoke T1, adapter đầy đủ T3. Thành phần chính: FcmSender.send_test/send_fall. I/O: PushEndpoint + event → provider message ID/error. Được dùng bởi/tại: scripts/test_push.py; outbox. Kiểm chứng: Accepted phân biệt delivered; secret chỉ backend. 
 
-**File:** `scripts/test_push.py` — Chỉnh sửa file đã có; SV2 chịu trách nhiệm. Chức năng: Thử FCM riêng, không giả kết quả AI. Thành phần chính: main --device-id. I/O: Device DB/test payload → FCM accepted/error. Được dùng bởi/tại: FcmSender. Kiểm chứng: Điện thoại nhận test message, không cần pose. 
+**File:** `scripts/test_push.py` — Chỉnh sửa file đã có; SV2 chịu trách nhiệm. Chức năng: Thử FCM riêng, không giả kết quả AI. Thành phần chính: main --device-id. I/O: Device DB/test 
+
+payload → FCM accepted/error. Được dùng bởi/tại: FcmSender. Kiểm chứng: Điện thoại nhận test message, không cần pose. 
 
 **File:** `tests/test_api.py` — Chỉnh sửa file đã có; SV2 chịu trách nhiệm. Chức năng: Contract/API với mock AI. Thành phần chính: test_status; test_protected_preview; test_ack. I/O: TestClient + mock pipeline → JSON/HTTP. Được dùng bởi/tại: pytest; routes. Kiểm chứng: Không đòi camera/GPU để chạy contract tests. 
 
@@ -1424,7 +1447,9 @@ NotificationService đăng ký endpoint sau pairing, refresh cập nhật đúng
 
 **File:** `mobile/lib/services/alarm_service.dart` — Tạo mới; SV3 chịu trách nhiệm. Chức năng: Audio foreground có dừng và timeout. Thành phần chính: playForEvent; stop; dispose. I/O: Asset và event_id → audio player. Được dùng bởi/tại: AlertCoordinator; AlertScreen. Kiểm chứng: Stop ngay; tối đa 10 s; không phát khi sound off. 
 
-**File:** `mobile/lib/screens/home_screen.dart` — Chỉnh sửa file đã có; SV3 chịu trách nhiệm. Chức năng: RTSP form, status, camera, setting và thử push. Thành phần chính: HomeScreen; refresh; configureCamera. I/O: Status/camera config → UI. Được dùng bởi/tại: ApiClient; WsClient; CameraView. Kiểm chứng: Phân biệt camera connected và AI ready; password che mặc định. 
+**File:** `mobile/lib/screens/home_screen.dart` — Chỉnh sửa file đã có; SV3 chịu trách nhiệm. Chức năng: RTSP form, status, camera, setting và thử push. Thành phần chính: HomeScreen; refresh; configureCamera. I/O: Status/camera config → UI. Được dùng 
+
+bởi/tại: ApiClient; WsClient; CameraView. Kiểm chứng: Phân biệt camera connected và AI ready; password che mặc định. 
 
 **File:** `mobile/lib/screens/alert_screen.dart` — Chỉnh sửa file đã có; SV3 chịu trách nhiệm. Chức năng: Thông tin sự kiện, tắt âm và ack. Thành phần chính: AlertScreen; onSilence; onAcknowledge. I/O: FallEvent → UI/action. Được dùng bởi/tại: AlertCoordinator; ApiClient. Kiểm chứng: Nút tắt âm/đã xem hoạt động kể cả API tạm lỗi. 
 
@@ -1442,9 +1467,7 @@ NotificationService đăng ký endpoint sau pairing, refresh cập nhật đúng
 
 **File:** `mobile/android/app/src/main/res/drawable/ic_stat_fall.xml` — Tạo mới; SV3 chịu trách nhiệm. Chức năng: Icon notification đơn sắc đúng resource. Thành phần chính: Vector drawable. I/O: Resource → notification icon. Được dùng bởi/tại: Manifest; notification service. Kiểm chứng: Notification không mất icon trên máy thật. 
 
-**File:** `mobile/android/app/src/main/res/raw/keep.xml` — Tạo mới; SV3 chịu trách nhiệm. Chức năng: Giữ raw sound/icon nếu shrink resource. Thành phần chính: tools:keep. I/O: 
-
-Resource list → build retention. Được dùng bởi/tại: Android resource shrinker. Kiểm chứng: Release test không bị loại sound/icon; debug vẫn build. 
+**File:** `mobile/android/app/src/main/res/raw/keep.xml` — Tạo mới; SV3 chịu trách nhiệm. Chức năng: Giữ raw sound/icon nếu shrink resource. Thành phần chính: tools:keep. I/O: Resource list → build retention. Được dùng bởi/tại: Android resource shrinker. Kiểm chứng: Release test không bị loại sound/icon; debug vẫn build. 
 
 **File:** `mobile/test/models_test.dart` — Chỉnh sửa file đã có; SV3 chịu trách nhiệm. Chức năng: Parser schema và dữ liệu thiếu. Thành phần chính: FallEvent/status parsing tests. I/O: JSON fixtures → Dart models/error. Được dùng bởi/tại: flutter test. Kiểm chứng: Schema cũ/sai không làm app crash. 
 
@@ -1494,57 +1517,45 @@ evaluation/final.json chứa số đo thật từ evaluate.py/clip replay, khôn
 
 - T1. Khóa config/model_id và danh sách test; chạy đúng một vòng held-out trước khi sửa từ test. Nếu phát hiện lỗi P0 buộc sửa, dùng tập sửa lỗi riêng và ghi lần đánh giá tiếp theo không còn hoàn toàn unseen, không lặp tuning mà gọi là test mới. 
 
-- T2. Chạy ngã/ADL, báo TP/FP/FN, recall/precision/F1, số phút ADL và FA/hour. Kiểm tra model A/B đã chọn thật đang load, không phải mock; labels/video phải khớp. 
+- T2. Chạy ngã/ADL, báo TP/FP/FN, recall/precision/F1, số phút ADL và FA/hour. Kiểm tra pretrained model đã chọn thật đang load, không phải mock; labels/video phải khớp. 
 
 - T3. Test RTSP thật cùng SV2; kiểm camera nhìn đủ toàn thân và độ tin cậy khớp ở tư thế thấp. Chỉ dùng clip đã có hoặc tình huống mô phỏng an toàn trên đệm bởi người khỏe; không yêu cầu người cao tuổi ngã thử. 
 
-- T4. Profile trên máy demo; hạ input/preview nếu cần và đo lại các ca bắt buộc. Nếu tốc độ chưa đạt đủ 10 Hz cho nhánh A, ưu tiên B hoặc cấu hình sampling đã kiểm chứng, không nhân bản frame để làm đủ cửa sổ. 
+- T4. Profile trên máy demo; hạ input/preview nếu cần và đo lại các ca bắt buộc. Nếu tốc độ chưa đạt đủ 10 Hz, dùng cấu hình sampling đã kiểm chứng và đánh giá lại, không nhân bản frame để làm đủ cửa sổ. 
 
 - T5. Bàn giao weights/hash/meta/config cuối; load trên CPU khi GPU không sẵn sàng. Cùng nhóm chạy startup sạch và demo đầy đủ, không sửa threshold sát giờ chỉ để một clip báo đẹp. 
 
 #### E. File, thành phần và hợp đồng I/O 
 
-**File:** `configs/ai.yaml` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Model, cửa sổ và ngưỡng luật/xác nhận. Thành phần chính: mode; sample_hz; thresholds. I/O: YAML → detector/state machine config. Được dùng bởi/tại: backend/ai/factory.py; state_machine.py. Kiểm chứng: A/B đổi bằng config; không hardcode ngưỡng. 
+**File:** `configs/ai.yaml` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Model, cửa sổ và ngưỡng luật/xác nhận. Thành phần chính: mode; sample_hz; thresholds. I/O: YAML → detector/state machine config. Được dùng bởi/tại: backend/ai/factory.py; state_machine.py. Kiểm chứng: Pretrained và ngưỡng đặt bằng config; không hardcode ngưỡng. 
 
-**File:** `configs/train.yaml` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Seed, split, batch và siêu tham số train. Thành phần chính: seed; epochs; learning_rate. I/O: Cấu hình → dataset/train/evaluate. Được dùng bởi/tại: training/train.py. Kiểm chứng: Seed/split/feature_version được khóa cùng checkpoint. 
+**File:** `backend/ai/pose.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Load pose một lần, box/keypoint và track ID. Thành phần chính: PoseEstimator.estimate/reset/close. I/O: Frame BGR → tracked poses COCO17. Được dùng bởi/tại: pretrained adapter. Kiểm chứng: Không có người/ID/khớp thiếu không crash. 
 
-**File:** `backend/ai/pose.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Load pose một lần, box/keypoint và track ID. Thành phần chính: PoseEstimator.estimate/reset/close. I/O: Frame BGR → tracked poses COCO17. Được dùng bởi/tại: pretrained và trained adapters. Kiểm chứng: Không có người/ID/khớp thiếu không crash. 
+**File:** `backend/ai/buffer.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Cửa sổ theo track/session có timestamp. Thành phần chính: PoseBuffer.add/window/reset. I/O: Pose + time → 30 mốc/quality. Được dùng bởi/tại: Pretrained detector và feature extractor. Kiểm chứng: Không nối qua gap; không đếm trùng frame_id. 
 
-**File:** `backend/ai/buffer.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Cửa sổ theo track/session có timestamp. Thành phần chính: PoseBuffer.add/window/reset. I/O: Pose + time → 30 mốc/quality. Được dùng bởi/tại: Cả hai detector và feature extractor. Kiểm chứng: Không nối qua gap; không đếm trùng frame_id. 
-
-**File:** `backend/ai/features.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Feature/chuẩn hóa dùng chung train và runtime. Thành phần chính: extract_kinematics; normalize_window. I/O: Pose window → kinematics + [30,54]. Được dùng bởi/tại: training/extract, dataset; scorer A/B. Kiểm chứng: Cùng clip tạo feature giống offline/online. 
+**File:** `backend/ai/features.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Feature/chuẩn hóa dùng chung đánh giá offline và runtime. Thành phần chính: extract_kinematics; normalize_window. I/O: Pose window → kinematics + [30,54]. Được dùng bởi/tại: evaluation/extract; scorer luật. Kiểm chứng: Cùng clip tạo feature giống offline/online. 
 
 **File:** `backend/ai/pretrained.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Scorer luật dùng pose pretrained. Thành phần chính: RuleScorer.score; PretrainedDetector.process. I/O: Feature/history → candidate rule_score. Được dùng bởi/tại: factory; pipeline qua interface. Kiểm chứng: Không kết luận ngã từ một pose nằm. 
 
-**File:** `backend/ai/trained.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Adapter load TCN và kiểm metadata. Thành phần chính: TrainedDetector.process; load_checkpoint. I/O: Window [30,54] → uncalibrated_model_score. Được dùng bởi/tại: factory; pipeline qua interface. Kiểm chứng: A/B đổi config; checkpoint thiếu quay B rõ ràng. 
-
 **File:** `backend/ai/state_machine.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Xác nhận, latch episode, recovery. Thành phần chính: FallStateMachine.update/reset. I/O: Candidate + monotonic timestamp → transition. Được dùng bởi/tại: pipeline; tests/test_ai_sequence.py. Kiểm chứng: Giữ nằm không báo lặp; gap không tăng confirmation. 
 
-**File:** `backend/ai/factory.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Tạo mock/B/A theo config. Thành phần chính: create_detector(settings). I/O: Config/model path → FallDetector. Được dùng bởi/tại: backend/main.py. Kiểm chứng: Không load model mỗi request; báo lỗi rõ. 
-
-**File:** `backend/ai/tcn.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Kiến trúc phân loại chuỗi nhỏ dùng chung. Thành phần chính: FallTCN.forward. I/O: Tensor [N,54,30] → logits [N,1]. Được dùng bởi/tại: training/train; trained.py. Kiểm chứng: Forward CPU chạy được; shape có kiểm tra. 
+**File:** `backend/ai/factory.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Tạo mock/pretrained theo config. Thành phần chính: create_detector(settings). I/O: Config/model path → FallDetector. Được dùng bởi/tại: backend/main.py. Kiểm chứng: Không load model mỗi request; báo lỗi rõ. 
 
 **File:** `data/manifests/clips.csv` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Manifest dữ liệu nguồn có provenance. Thành phần chính: clip_id,path,group_id,subject_id,camera_id,fps. I/O: Metadata clip → loader/split. Được dùng bởi/tại: manifest.py; extract.py. Kiểm chứng: FPS/nhóm có giá trị xác minh; unknown được ghi rõ. 
 
-**File:** `data/labels/intervals.csv` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Nhãn onset/impact/end và hard negative. Thành phần chính: clip_id,onset_s,impact_s,end_s,label. I/O: Quan sát video → interval đã soát. Được dùng bởi/tại: training/extract; evaluate. Kiểm chứng: Không gắn mọi frame clip ngã là positive. 
+**File:** `data/labels/intervals.csv` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Nhãn onset/impact/end và hard negative. Thành phần chính: clip_id,onset_s,impact_s,end_s,label. I/O: Quan sát video → interval đã soát. Được dùng bởi/tại: evaluation/extract; evaluate. Kiểm chứng: Không gắn mọi frame clip ngã là positive. 
 
-**File:** `training/extract.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Trích pose/features đúng timestamp. Thành phần chính: extract_clip; save_features. I/O: RGB/MP4 + labels → .npz có timestamps. Được dùng bởi/tại: PoseEstimator; normalize_window. Kiểm chứng: Có thể resume; không tải lại model mỗi clip. 
+**File:** `evaluation/extract.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Trích pose/features đúng timestamp. Thành phần chính: extract_clip; save_features. I/O: RGB/MP4 + labels → .npz có timestamps. Được dùng bởi/tại: PoseEstimator; normalize_window. Kiểm chứng: Có thể resume; không tải lại model mỗi clip. 
 
-**File:** `data/features/*.npz` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Cache sinh tự động cho từng clip. Thành phần chính: features,timestamps,validity,labels. I/O: Clip + pose → numpy arrays. Được dùng bởi/tại: training/dataset.py. Kiểm chứng: Shape/thời gian khớp; không commit data lớn. 
+**File:** `data/features/*.npz` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Cache sinh tự động cho từng clip. Thành phần chính: features,timestamps,validity,labels. I/O: Clip + pose → numpy arrays. Được dùng bởi/tại: evaluation/evaluate.py. Kiểm chứng: Shape/thời gian khớp; không commit data lớn. 
 
-**File:** `training/dataset.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Loader cửa sổ, nhãn, augment chỉ train. Thành phần chính: FallWindowDataset.__getitem__. I/O: Cache + split → X [54,30], y, sample weight. Được dùng bởi/tại: DataLoader trong train/evaluate. Kiểm chứng: Val/test không augment; scaler chỉ fit train nếu dùng. 
-
-**File:** `training/evaluate.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Đánh giá window và episode theo cùng logic runtime. Thành phần chính: evaluate_windows; replay_events; summarize. I/O: Model/B + clips → precision/recall/FP/latency. Được dùng bởi/tại: Cả hai nhánh; configs/ai.yaml. Kiểm chứng: One-to-one matching event; bỏ is_test. 
+**File:** `evaluation/evaluate.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Đánh giá window và episode theo cùng logic runtime. Thành phần chính: evaluate_windows; replay_events; summarize. I/O: Pretrained + clips → precision/recall/FP/latency. Được dùng bởi/tại: Pretrained pipeline; configs/ai.yaml. Kiểm chứng: One-to-one matching event; bỏ is_test. 
 
 **File:** `scripts/ai_smoke.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Chạy 1 clip độc lập để thấy pose/status. Thành phần chính: main -- source --mode. I/O: Video/camera → preview/terminal counters. Được dùng bởi/tại: Detector interface. Kiểm chứng: Không cần backend/app để debug AI. 
 
 **File:** `models/yolo11n-pose.pt` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Weights pose tải từ nguồn chính thức. Thành phần chính: Binary model, không tự viết code. I/O: Frame → pretrained pose. Được dùng bởi/tại: PoseEstimator. Kiểm chứng: Ghi nguồn/hash, load được offline sau tải. 
 
-**File:** `models/fall_tcn.pt` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Checkpoint nhánh A sinh từ training. Thành phần chính: state_dict do torch.save. I/O: Model đã train → adapter CPU/GPU. Được dùng bởi/tại: TrainedDetector. Kiểm chứng: Load lại cho output gần như tương đương; không giả file khi train chưa xong. 
-
-**File:** `models/fall_tcn.meta.json` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Hợp đồng weights/feature và threshold validation. Thành phần chính: feature_version; sample_hz; class_map; seed. I/O: Training/validation → metadata. Được dùng bởi/tại: TrainedDetector.load_checkpoint. Kiểm chứng: Từ chối shape/version không khớp. 
-
-**File:** `evaluation/cases.csv` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Danh sách ca test có ground truth/tập dữ liệu. Thành phần chính: case_id,clip_id,split,expected,interval. I/O: Video kiểm chứng → test cases. Được dùng bởi/tại: training/evaluate; cả nhóm. Kiểm chứng: Có ngã, ADL, nằm sẵn, che khuất; không dùng test tuning. 
+**File:** `evaluation/cases.csv` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV1 chịu trách nhiệm. Chức năng: Danh sách ca test có ground truth/tập dữ liệu. Thành phần chính: case_id,clip_id,split,expected,interval. I/O: Video kiểm chứng → test cases. Được dùng bởi/tại: evaluation/evaluate; cả nhóm. Kiểm chứng: Có ngã, ADL, nằm sẵn, che khuất; không dùng test tuning. 
 
 **File:** `evaluation/final.json` — Tạo mới; SV1 chịu trách nhiệm. Chức năng: Kết quả kỹ thuật test khóa cuối cùng. Thành phần chính: TP,FP,FN,FA/hour,latency,FPS,limitations. I/O: Held-out test và demo → chỉ số đo. Được dùng bởi/tại: Nghiệm thu MVP. Kiểm chứng: Ghi rõ chưa đo nếu thiếu mẫu, không điền ước lượng thành kết quả. 
 
@@ -1554,7 +1565,7 @@ Các file sinh tự động hoặc file dữ liệu trong danh sách là đầu 
 
 #### F. Thứ tự, phụ thuộc và stub 
 
-Ngày 16 khóa và test; ngày 17 sửa lỗi quan trọng; ngày 18 thử camera thật; ngày 19 profile/regression; ngày 20 chạy sạch/bàn giao. Chỉ train lại A nếu model đó đã là MVP và một lỗi có nguyên nhân/dữ liệu sửa rõ; nếu không, giữ B. SV1 hỗ trợ SV2 nếu status DEGRADED không tương ứng chất lượng mẫu. 
+Ngày 16 khóa và test; ngày 17 sửa lỗi quan trọng; ngày 18 thử camera thật; ngày 19 profile/regression; ngày 20 chạy sạch/bàn giao. Giữ nguyên weights pretrained, chỉ sửa lỗi tích hợp/cấu hình có nguyên nhân rõ. SV1 hỗ trợ SV2 nếu status DEGRADED không tương ứng chất lượng mẫu. 
 
 #### G. Kiểm thử sau khi hoàn thành 
 
@@ -1562,7 +1573,7 @@ Ngày 16 khóa và test; ngày 17 sửa lỗi quan trọng; ngày 18 thử camer
 
 - Chạy 20–30 phút ở cấu hình demo; FPS không suy từ preview, latency không gồm warmup tùy ý bị giấu. Không crash/NaN khi không có người. 
 
-- Restart backend/model, config mode khớp model_id; checksum/meta và input_dim đúng. Model file bị thiếu/không tương thích → fallback B rõ ràng hoặc AI ERROR, không alarm giả. 
+- Restart backend/model, config mode khớp model_id; checksum/meta và input_dim đúng. Model file bị thiếu/không tương thích → AI ERROR rõ ràng, không alarm giả. 
 
 #### H. Deliverables và thao tác demo 
 
@@ -1604,13 +1615,15 @@ Các sửa đổi tập trung reader/pipeline/outbox/routes và config; measure_
 
 #### E. File, thành phần và hợp đồng I/O 
 
-**File:** `pyproject.toml` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV2 chịu trách nhiệm. Chức năng: Khai báo package Python và dải Python 3.11. Thành phần chính: project; tool.pytest.ini_options. I/O: Không có hàm; đầu vào metadata, đầu ra môi trường cài được. Được dùng bởi/tại: pip và pytest. Kiểm chứng: Import backend/training từ root ổn định. 
+**File:** `pyproject.toml` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV2 chịu trách nhiệm. Chức năng: Khai báo package Python và dải Python 3.11. Thành phần chính: project; tool.pytest.ini_options. I/O: Không có hàm; đầu vào metadata, đầu ra môi trường cài được. Được dùng bởi/tại: pip và pytest. Kiểm chứng: Import backend/evaluation từ root ổn định. 
 
 **File:** `requirements.lock.txt` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV2 chịu trách nhiệm. Chức năng: Khóa dependency sau smoke test. Thành phần chính: pip freeze/pip install -r. I/O: Bộ package đã kiểm tra → phiên bản chính xác. Được dùng bởi/tại: Mọi laptop backend/AI. Kiểm chứng: Cài lại trên môi trường sạch, import được. 
 
 **File:** `.gitignore` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV2 chịu trách nhiệm. Chức năng: Loại secret, runtime, data lớn và build khỏi git. Thành phần chính: Các pattern. I/O: Đường dẫn nhạy cảm → bỏ theo dõi git. Được dùng bởi/tại: Repository. Kiểm chứng: .env, credential JSON, runtime DB không được commit. 
 
-**File:** `README.md` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV2 chịu trách nhiệm. Chức năng: Lệnh cài/chạy và thao tác vận hành MVP. Thành phần chính: Các lệnh backend/pairing/Flutter. I/O: Máy mới → chạy demo; không có báo cáo học phần. Được dùng bởi/tại: Cả nhóm và người chạy thử. Kiểm chứng: Có lệnh smoke và giới hạn bản chạy đúng thực tế. 
+**File:** `README.md` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV2 chịu trách nhiệm. Chức năng: Lệnh cài/chạy và thao tác vận hành MVP. Thành phần chính: Các lệnh backend/pairing/Flutter. I/O: Máy mới → chạy demo; không có báo cáo học phần. Được 
+
+dùng bởi/tại: Cả nhóm và người chạy thử. Kiểm chứng: Có lệnh smoke và giới hạn bản chạy đúng thực tế. 
 
 **File:** `configs/app.yaml` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV2 chịu trách nhiệm. Chức năng: Timeout, camera, rate preview, runtime DB. Thành phần chính: Config keys tại Chương 2. I/O: YAML/env → AppSettings. Được dùng bởi/tại: backend/config.py. Kiểm chứng: Giá trị lỗi bị báo lúc startup. 
 
@@ -1634,9 +1647,7 @@ Các sửa đổi tập trung reader/pipeline/outbox/routes và config; measure_
 
 **File:** `backend/pairing.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV2 chịu trách nhiệm. Chức năng: CLI sinh/thu hồi và claim code một lần. Thành phần chính: create_pairing; claim_pairing; revoke_device; main. I/O: Code 256 bit → device secret/installation. Được dùng bởi/tại: CLI; api/routes.py. Kiểm chứng: TTL và concurrent claim đúng; không cần tài khoản. 
 
-**File:** `backend/auth.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV2 chịu trách nhiệm. Chức năng: Xác thực hash device secret và scope installation. Thành phần chính: 
-
-require_device; verify_device_secret. I/O: Bearer secret → DeviceContext/401. Được dùng bởi/tại: Mọi route và WS/stream nhạy cảm. Kiểm chứng: Khóa sai/revoke không xem được ảnh/event. 
+**File:** `backend/auth.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV2 chịu trách nhiệm. Chức năng: Xác thực hash device secret và scope installation. Thành phần chính: require_device; verify_device_secret. I/O: Bearer secret → DeviceContext/401. Được dùng bởi/tại: Mọi route và WS/stream nhạy cảm. Kiểm chứng: Khóa sai/revoke không xem được ảnh/event. 
 
 **File:** `backend/alerts/events.py` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV2 chịu trách nhiệm. Chức năng: Tạo event một lần sau confirmed. Thành phần chính: EventService.create_once; acknowledge. I/O: State transition → event_id/record. Được dùng bởi/tại: pipeline; routes; outbox; ws. Kiểm chứng: Một episode chỉ một event; ack idempotent. 
 
@@ -1720,11 +1731,11 @@ Sửa main/lifecycle/WS/coordinator/screens theo lỗi đã tái hiện; test t�
 
 **File:** `mobile/lib/config.dart` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV3 chịu trách nhiệm. Chức năng: Quy ước timeout/schema/base URL đã parse. Thành phần chính: AppConfig; parseServerUri. I/O: Pairing URI → validated URL. Được dùng bởi/tại: ApiClient; WsClient. Kiểm chứng: Reject scheme/host thiếu; không hardcode localhost. 
 
-**File:** `mobile/lib/models.dart` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV3 chịu trách nhiệm. Chức năng: Parser status/event/pairing có kiểm trường. Thành phần chính: SystemStatus.fromJson; FallEvent.fromJson/fromPushData. I/O: JSON REST/WS/FCM → Dart models. Được dùng bởi/tại: Screens; coordinator. Kiểm chứng: Sai schema/optional field không crash UI. 
+**File:** `mobile/lib/models.dart` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV3 chịu trách nhiệm. Chức năng: Parser status/event/pairing có kiểm trường. Thành phần chính: SystemStatus.fromJson; FallEvent.fromJson/fromPushData. I/O: JSON REST/WS/FCM → 
 
-**File:** `mobile/lib/services/api_client.dart` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV3 chịu trách nhiệm. Chức năng: HTTP header, timeout và đồng bộ event. Thành phần chính: getStatus; pair; configureCamera; listEvents; ack. I/O: DTO/device secret → 
+Dart models. Được dùng bởi/tại: Screens; coordinator. Kiểm chứng: Sai schema/optional field không crash UI. 
 
-response typed. Được dùng bởi/tại: Home/Pair/Alert screens. Kiểm chứng: 401 chuyển trạng thái cần ghép; không tự retry claim bừa. 
+**File:** `mobile/lib/services/api_client.dart` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV3 chịu trách nhiệm. Chức năng: HTTP header, timeout và đồng bộ event. Thành phần chính: getStatus; pair; configureCamera; listEvents; ack. I/O: DTO/device secret → response typed. Được dùng bởi/tại: Home/Pair/Alert screens. Kiểm chứng: 401 chuyển trạng thái cần ghép; không tự retry claim bừa. 
 
 **File:** `mobile/lib/services/device_store.dart` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV3 chịu trách nhiệm. Chức năng: Lưu khóa và installation trong secure storage. Thành phần chính: savePairing; loadPairing; clearPairing. I/O: Claim result → storage an toàn. Được dùng bởi/tại: main; ApiClient; NotificationService. Kiểm chứng: Restart còn ghép; unpair xóa sạch khóa/cursor. 
 
@@ -1742,7 +1753,9 @@ response typed. Được dùng bởi/tại: Home/Pair/Alert screens. Kiểm ch�
 
 **File:** `mobile/lib/screens/alert_screen.dart` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV3 chịu trách nhiệm. Chức năng: Thông tin sự kiện, tắt âm và ack. Thành phần chính: AlertScreen; onSilence; onAcknowledge. I/O: FallEvent → UI/action. Được dùng bởi/tại: AlertCoordinator; ApiClient. Kiểm chứng: Nút tắt âm/đã xem hoạt động kể cả API tạm lỗi. 
 
-**File:** `mobile/lib/widgets/camera_view.dart` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV3 chịu trách nhiệm. Chức năng: Hiển thị MJPEG qua HTTP có header. Thành phần chính: CameraView; onLifecycleChanged. I/O: URL stream + secret → widget ảnh. Được dùng bởi/tại: HomeScreen; flutter_mjpeg. Kiểm chứng: Nền app ngắt view; AI backend vẫn chạy. 
+**File:** `mobile/lib/widgets/camera_view.dart` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV3 chịu trách nhiệm. Chức năng: Hiển thị MJPEG qua HTTP có header. Thành phần chính: CameraView; onLifecycleChanged. I/O: URL stream + secret → widget ảnh. Được 
+
+dùng bởi/tại: HomeScreen; flutter_mjpeg. Kiểm chứng: Nền app ngắt view; AI backend vẫn chạy. 
 
 **File:** `mobile/android/app/build.gradle.kts` — Rà soát/chỉnh khi có lỗi, giữ nguyên nếu đã đạt; SV3 chịu trách nhiệm. Chức năng: Android SDK/plugin/applicationId. Thành phần chính: android; plugins; buildTypes. I/O: Flutter/Android deps → APK. Được dùng bởi/tại: flutter build/run. Kiểm chứng: Không thay applicationId sau cấu hình FCM. 
 
@@ -1766,9 +1779,7 @@ response typed. Được dùng bởi/tại: Home/Pair/Alert screens. Kiểm ch�
 
 **File:** `mobile/build/app/outputs/flutter-apk/app-debug.apk` — Tạo mới; SV3 chịu trách nhiệm. Chức năng: Bản app debug sinh bằng Flutter build. Thành phần chính: Binary APK, không viết tay. I/O: Source/resources/config → app cài được. Được dùng bởi/tại: Điện thoại Android thử nghiệm. Kiểm chứng: Cài mới, pairing/RTSP/push/sound/ack chạy thật. 
 
-Các file sinh tự động hoặc file dữ liệu trong danh sách là đầu ra của lệnh/script tương ứng; không yêu cầu viết tay nhị phân weights, lockfile, cache hoặc cấu hình Firebase. Các 
-
-__init__.py rỗng và skeleton Android do Flutter tạo được tạo theo cấu trúc chuẩn, không có nghiệp vụ riêng. 
+Các file sinh tự động hoặc file dữ liệu trong danh sách là đầu ra của lệnh/script tương ứng; không yêu cầu viết tay nhị phân weights, lockfile, cache hoặc cấu hình Firebase. Các __init__.py rỗng và skeleton Android do Flutter tạo được tạo theo cấu trúc chuẩn, không có nghiệp vụ riêng. 
 
 #### F. Thứ tự, phụ thuộc và stub 
 
@@ -1799,11 +1810,6 @@ Mỗi dòng là một người trong một ngày: đúng 4 tuần × 5 ngày × 
 |**Ngày**|**SV**|**Học**|**Lập trình**|**File/module**|**Đầu ra + thử**|**Phụ**<br>**thuộc**|
 |---|---|---|---|---|---|---|
 |1|SV1|Ảnh numpy,<br>BGR,<br>box/keypoint|Cài pose, chạy clip một<br>người|ai/pose.py;<br>ai_smoke.py|Vẽ được pose; clip<br>hết không crash|Môi<br>trường<br>Python|
-
-
-
-|**Ngày**|**SV**|**Học**|**Lập trình**|**File/module**|**Đầu ra + thử**|**Phụ**<br>**thuộc**|
-|---|---|---|---|---|---|---|
 |1|SV2|FastAPI,<br>lifespan, config|Tạo app, health/status<br>và repo|main.py; config.py;<br>app.yaml|Server 200; lỗi<br>config rõ|Không|
 |1|SV3|Dart async,<br>Flutter State|Chạy Android thật; tạo<br>pair/home|main.dart;<br>pair_screen.dart|App mở hai màn<br>hình|Flutter<br>doctor|
 |2|SV1|Protocol,<br>dataclass,<br>timestamp|Khóa contract; viết<br>mock/buffer|contracts.py;<br>interface.py;<br>mock.py|SV2 gọi process()<br>được|SV2<br>thống<br>nhất<br>DTO|
@@ -1833,18 +1839,18 @@ Mỗi dòng là một người trong một ngày: đúng 4 tuần × 5 ngày × 
 |7|SV1|State machine,<br>latch/hysteresi<br>s|RuleScorer và xác nhận<br>ngã|pretrained.py;<br>state_machine.py|Ngã 1 event; cúi<br>không alarm|Features<br>ngày 6|
 |7|SV2|MJPEG, cache<br>dùng chung|Stream và preview có<br>auth|api/stream.py;<br>latest.py|Hai viewer không<br>chặn AI|JPEG<br>cache|
 |7|SV3|HTTP MJPEG,<br>lifecycle view|Thêm camera view có<br>header|camera_view.dart|Hiện hình; nền<br>dừng viewer|Stream<br>SV2|
-|8|SV1|Dataset,<br>Conv1d, BCE<br>logits|TCN/DataLoader, train<br>2 epoch|dataset.py; tcn.py;<br>train.py|Loss hữu hạn; B<br>bàn giao|Split/<br>features|
-|8|SV2|Thread→<br>event loop|Nối B thật và status<br>realtime|pipeline.py; ws.py;<br>routes.py|RTSP qua AI tới<br>WS|B từ SV1|
+|8|SV1|Load<br>pretrained<br>model, CPU<br>inference|Hoàn thiện detector,<br>replay và bàn giao|pretrained.py;<br>pose.py;<br>ai_smoke.py|Weights load thật;<br>detector bàn giao|Pose/<br>features|
+|8|SV2|Thread→<br>event loop|Nối pretrained thật và<br>status realtime|pipeline.py; ws.py;<br>routes.py|RTSP qua AI tới<br>WS|Pretraine<br>d từ SV1|
 |8|SV3|Event ID,<br>candidate/confi<br>rmed|Coordinator/AlertScreen<br>fixture|alert_coordinator.d<br>art;<br>alert_screen.dart|Một banner cho<br>event lặp|Event<br>schema|
-|9|SV1|Early stopping,<br>val threshold|Train best; load CPU;<br>val A/B|trained.py;<br>evaluate.py;<br>meta.json|Checkpoint load,<br>metrics thật|Pilot train|
+|9|SV1|Validation<br>threshold, CPU<br>load|Load pretrained CPU;<br>đánh giá trên val|pose.py;<br>evaluate.py;<br>ai.yaml|Pretrained load,<br>metrics thật|Pretraine<br>d<br>pipeline|
 |9|SV2|API contract,<br>camera<br>switching|Test auth/stream/reset;<br>sửa lag|test_api.py;<br>reader.py;<br>pipeline.py|Switch không<br>ghép session cũ|AI + app|
-|9|SV3|Parser errors,<br>resume sync|Nối trạng thái thật; test<br>models|models_test.dart;<br>ws_client.dart|Sai schema không<br>crash|B/WS<br>SV2|
-|10|SV1|Precision/recall<br>tradeoff|So A/B, khóa hướng<br>MVP|validation.json;<br>ai.yaml|Có lựa chọn dựa<br>val/latency|Cùng dữ<br>liệu/máy|
+|9|SV3|Parser errors,<br>resume sync|Nối trạng thái thật; test<br>models|models_test.dart;<br>ws_client.dart|Sai schema không<br>crash|Pretraine<br>d/WS<br>SV2|
 
 
 
 |**Ngày**|**SV**|**Học**|**Lập trình**|**File/module**|**Đầu ra + thử**|**Phụ**<br>**thuộc**|
 |---|---|---|---|---|---|---|
+|10|SV1|Precision/recall<br>tradeoff|Kiểm chứng pretrained,<br>khóa cấu hình MVP|validation.json;<br>ai.yaml|Cấu hình dựa<br>val/latency|Cùng dữ<br>liệu/máy|
 |10|SV2|Debug end-to-<br>end|Tích hợp<br>RTSP/AI/preview/app|pipeline.py; api/*|App xem ảnh và<br>AI thật|SV1 +<br>SV3|
 |10|SV3|Lifecycle<br>camera/socket|Test UI thật, chuẩn<br>event push|home_screen.dart;<br>coordinator|Một socket; xem<br>AI thật|Backend<br>ngày 10|
 
@@ -1856,7 +1862,7 @@ Mỗi dòng là một người trong một ngày: đúng 4 tuần × 5 ngày × 
 
 |**Ngày**|**SV**|**Học**|**Lập trình**|**File/module**|**Đầu ra + thử**|**Phụ**<br>**thuộc**|
 |---|---|---|---|---|---|---|
-|11|SV1|Transition/<br>episode ID|Khóa<br>confirmed/recovery<br>contract|state_machine.py;<br>contracts.py|SV2 tạo event từ<br>transition|B/A đã<br>chọn|
+|11|SV1|Transition/<br>episode ID|Khóa<br>confirmed/recovery<br>contract|state_machine.py;<br>contracts.py|SV2 tạo event từ<br>transition|Pretraine<br>d đã chốt|
 |11|SV2|Idempotency,<br>unique index|EventService +<br>events/outbox schema|events.py;<br>schema.sql;<br>storage.py|Cùng episode một<br>event|Transitio<br>n SV1|
 |11|SV3|Channels,<br>permission<br>state|Hoàn thiện 2 channel<br>và Settings|notification_servic<br>e.dart; manifest|Sound/silent<br>channels tồn tại|FCM T1|
 |12|SV1|Phân tích false<br>positives|Hard negatives và chỉnh<br>onset|pretrained.py;<br>cases.csv|Giảm lỗi đã tái<br>hiện trên val|Video<br>ADL|
@@ -1870,7 +1876,7 @@ Mỗi dòng là một người trong một ngày: đúng 4 tuần × 5 ngày × 
 
 |**Ngày**|**SV**|**Học**|**Lập trình**|**File/module**|**Đầu ra + thử**|**Phụ**<br>**thuộc**|
 |---|---|---|---|---|---|---|
-|14|SV1|Imbalance/LR<br>nếu A đã chạy|Một thử A nhỏ; hỗ trợ<br>toàn tuyến|train.py;<br>evaluate.py;<br>ai.yaml|So val; không mở<br>kiến trúc mới|Ngân<br>sách A<br>4h<br>≤|
+|14|SV1|Kiểm chứng<br>pretrained và<br>ngưỡng|Replay validation; hỗ<br>trợ toàn tuyến|pretrained.py;<br>evaluate.py;<br>ai.yaml|So val; không mở<br>kiến trúc mới|Ngân<br>sách<br>kiểm<br>thử<br>4h<br>≤|
 |14|SV2|Lỗi<br>cloud/device,<br>retry race|Test FCM thật và<br>duplicate|outbox.py;<br>tests/test_alerts.py|AI<br>event<br>push<br>→<br>→<br>nền|SV1 +<br>SV3|
 |14|SV3|Dedup/pause/<br>resume|Test nền/khóa và<br>WS+FCM|alert_coordinator_t<br>est.dart|Một alarm<br>foreground/event|FCM thật|
 |15|SV1|Regression/<br>khóa version|Chốt model/config, test<br>hard negatives|validation.json;<br>model meta|Weights/config<br>cuối tuần|Toàn<br>tuyến|
@@ -1910,146 +1916,101 @@ Mỗi dòng là một người trong một ngày: đúng 4 tuần × 5 ngày × 
 
 30 phút đệm mỗi người/ngày dành cho lỗi cài đặt, review interface và ghép module ngay trong ngày. Nếu một task vượt ngân sách, cắt P1/P2 trước; không dồn toàn bộ test/tích hợp sang tuần cuối. 
 
-## 8. Hai lộ trình AI và mốc lựa chọn mô hình 
+## 8. Lộ trình dùng pretrained model và các mốc kiểm chứng 
 
-### 8.1. Phân biệt ba nghĩa của “tự train” 
+### 8.1. Phương án pretrained đã chốt 
 
-|**Cách làm**|**Nhóm tự học tham số nào?**|**Chọn trong 4 tuần?**|
-|---|---|---|
-|Train toàn bộ vision<br>model từ đầu|Khởi tạo ngẫu nhiên detector/pose và mạng<br>hành vi, cần dữ liệu box/keypoint/hành vi đủ<br>lớn.|Không chọn: thời gian/dữ liệu/hạ<br>tầng vượt phạm vi. Đây không<br>phải điều kiện Application Track.|
+Chốt dùng YOLO11n-pose pretrained kết hợp ByteTrack, đặc trưng chuyển động, luật theo thời gian và máy trạng thái xác nhận ngã. Giữ nguyên weights đã huấn luyện sẵn; không tự train hoặc fine-tune pose hay bộ phân loại chuỗi. Video ngã/không ngã chỉ dùng hiệu chỉnh ngưỡng và đánh giá. Pose pretrained cung cấp khớp cơ thể; kết luận sự kiện ngã vẫn cần pipeline theo thời gian. 
 
-
-
-|**Cách làm**|**Nhóm tự học tham số nào?**|**Chọn trong 4 tuần?**|
-|---|---|---|
-|Fine-tune model đã<br>pretrained|Tiếp tục cập nhật weights đã có bằng dữ liệu<br>phù hợp cùng kiểu nhãn. Ví dụ pose cần nhãn<br>khớp, action model cần chuỗi/nhãn hành vi<br>tương thích.|Là lựa chọn thay thế có điều<br>kiện, không cộng thêm hệ thống<br>thứ ba. URFD RGB có nhãn ngã<br>không tự trở thành pose<br>annotations.|
-|Train classifier nhỏ từ<br>đầu trên feature<br>pretrained|Pose giữ nguyên weights; TCN mới khởi tạo<br>ngẫu nhiên và học phân loại chuỗi ngã/không<br>ngã.|Chọn làm hướng A thực tế. Phải<br>nói rõ phần pose dùng<br>pretrained, phần ngã do nhóm tự<br>train.|
-
-
-
-Nếu giảng viên yêu cầu cụ thể tự huấn luyện, nhóm trình bày chính xác phạm vi TCN đã train; không nhận đã train YOLO từ đầu. Fine-tuning một model hành vi có sẵn chỉ xem xét nếu có weights, giấy phép, label map và loader sẵn, chạy được trong buổi thử tối đa 2 giờ. Nếu phải học thêm framework video lớn, giữ TCN. Không fine-tune pose bằng hai nhãn fall/non-fall vì sai bài toán. 
-
-### 8.2. Dataset và gán nhãn dùng cho hướng A 
+### 8.2. Dataset và gán nhãn dùng để hiệu chỉnh và đánh giá 
 
 Nguồn chính được kiểm tra là UR Fall Detection Dataset [S6]: 70 sequence gồm 30 ngã và 40 hoạt động thường ngày; dữ liệu RGB/depth được phân phối dạng chuỗi PNG nén, không chỉ là các MP4 sẵn. Ngã có hai camera; ADL dùng camera0. MVP chỉ dùng RGB camera0 để cấu trúc đồng nhất. Nguồn công bố giới hạn học thuật phi thương mại; nhóm kiểm điều kiện tải và lưu provenance khi lấy dữ liệu. Không cần xử lý accelerometer/depth cho ứng dụng một camera RGB. 
 
-- Bước A1 — kiểm nguồn: tải 2 clip ngã và 2 ADL trước; giải nén, sort tên frame theo số tự nhiên, mở xem. Xác minh FPS/timestamp bằng metadata/tài liệu đi kèm; nếu buộc giả định FPS, ghi assumption ở clips.csv và không suy vận tốc chính xác từ dữ liệu đó. 
+- Bước 1 — kiểm nguồn: tải 2 clip ngã và 2 ADL trước; giải nén, sort tên frame theo số tự nhiên, mở xem. Xác minh FPS/timestamp bằng metadata/tài liệu đi kèm; nếu buộc giả định FPS, ghi assumption ở clips.csv và không suy vận tốc chính xác từ dữ liệu đó. 
 
-- Bước A2 — manifest: mỗi clip có clip_id, source, path, camera_id, group_id, subject_id nếu xác minh được, source_fps/timestamps. Nếu hai góc cùng một hành động được dùng sau này, chúng phải cùng group. Không đoán subject_id từ tên file nếu dataset không cung cấp. 
+- Bước 2 — manifest: mỗi clip có clip_id, source, path, camera_id, group_id, subject_id nếu xác minh được, source_fps/timestamps. Nếu hai góc cùng một hành động được dùng sau này, chúng phải cùng group. Không đoán subject_id từ tên file nếu dataset không cung cấp. 
 
-- Bước A3 — annotation: với clip ngã, đánh onset_s (bắt đầu mất thăng bằng/đi xuống), impact_s (chạm nền/đến tư thế ngã), end_s (cuối sự kiện) bằng xem chậm. ADL có nhãn negative; không gán mọi frame của clip ngã là positive vì đoạn đầu còn đứng. 
+- Bước 3 — annotation: với clip ngã, đánh onset_s (bắt đầu mất thăng bằng/đi xuống), impact_s (chạm nền/đến tư thế ngã), end_s (cuối sự kiện) bằng xem chậm. ADL có nhãn negative; không gán mọi frame của clip ngã là positive vì đoạn đầu còn đứng. 
 
-- Bước A4 — split: ưu tiên subject-independent nếu nhận diện được người và mỗi tập đủ class; nếu không, group theo recording, khoảng 60/20/20. Một phân bổ camera0 theo clip có thể là train 18 fall+24 ADL, val 6+8, test 6+8 nếu group cho phép; số thật thay đổi khi group ràng buộc. Công bố rõ khi chỉ độc lập recording, chưa độc lập người. 
+- Bước 4 — split: ưu tiên subject-independent nếu nhận diện được người và mỗi tập đủ class; nếu không, group theo recording. Chia validation/test theo group, ghi số clip ngã/ADL thực tế ở mỗi tập. Không tạo tập train vì dùng pretrained model. Công bố rõ khi chỉ độc lập recording, chưa độc lập người. 
 
-- Bước A5 — giữ cả clip/phiên thuộc một split trước rồi mới cắt window; hai window overlap không lọt khác split. Test địa điểm/camera demo là tập ngoài miền bổ sung, không hòa lại vào train sau khi đã xem kết quả rồi gọi là unseen. 
+- Bước 5 — giữ cả clip/phiên thuộc một split trước rồi mới cắt window; hai window overlap không lọt khác split. Test địa điểm/camera demo là tập ngoài miền bổ sung, không hòa lại vào tập hiệu chỉnh sau khi đã xem kết quả rồi gọi là unseen. 
 
-- Bước A6 — hard negatives: thêm video ngồi nhanh/cúi/quỳ/nằm có chủ ý/đã nằm khi bật camera/camera rung. Tự quay ở điều kiện được phép bằng người khỏe hoặc dùng nguồn có quyền; không yêu cầu người cao tuổi diễn ngã. Các clip này có group theo người và buổi quay. 
+- Bước 6 — hard negatives: thêm video ngồi nhanh/cúi/quỳ/nằm có chủ ý/đã nằm khi bật camera/camera rung. Tự quay ở điều kiện được phép bằng người khỏe hoặc dùng nguồn có quyền; không yêu cầu người cao tuổi diễn ngã. Các clip này có group theo người và buổi quay. 
 
-- Bước A7 — quality: trích COCO17 bằng cùng pose weights/input, lấy mẫu 10 Hz, lưu timestamps/validity. Clip thiếu toàn thân nhiều thì gắn quality flag; không bịa tọa độ hoặc âm thầm xóa ca khó khỏi test. 
+- Bước 7 — quality: trích COCO17 bằng cùng pose weights/input, lấy mẫu 10 Hz, lưu timestamps/validity. Clip thiếu toàn thân nhiều thì gắn quality flag; không bịa tọa độ hoặc âm thầm xóa ca khó khỏi test. 
 
-Nhãn cửa sổ: positive khi cửa sổ nhân quả 3 giây đã chứa chuyển tiếp ngã và mốc quyết định nằm trong đoạn sau impact đến impact+2 giây; negative cho ADL hoặc đoạn trước onset đủ cách biệt. Window đang chuyển tiếp chưa rõ nhãn có thể loại khỏi training ban đầu nhưng vẫn chạy trong replay để đo cảnh báo. Sau positive label, state machine vẫn phải xác nhận thời gian bằng dữ liệu mới. Nhãn phân loại window không được dùng làm ground truth event cuối nếu không có interval gốc. 
+Nhãn cửa sổ: positive khi cửa sổ nhân quả 3 giây đã chứa chuyển tiếp ngã và mốc quyết định nằm trong đoạn sau impact đến impact+2 giây; negative cho ADL hoặc đoạn trước onset đủ cách biệt. Window đang chuyển tiếp chưa rõ nhãn vẫn chạy trong replay để đo cảnh báo. Sau positive label, state machine vẫn phải xác nhận thời gian bằng dữ liệu mới. Nhãn phân loại window không được dùng làm ground truth event cuối nếu không có interval gốc. 
 
-Augmentation chỉ trên train: jitter tọa độ nhỏ theo scale thân, bỏ một số keypoint ngắn với confidence=0, thay scale/translation nhẹ và mirror có đổi trái–phải đúng mapping. Nếu thay tốc độ thời gian, phải thay cả timestamp/nhãn vận tốc nhất quán; P0 có thể bỏ augmentation tốc độ để giảm lỗi. Không xoay một người đang đứng 90° rồi gán nhãn ngã vì không có diễn biến ngã. Val/test không augment; mọi scaler/hyperparameter chỉ fit/chọn từ train/val. 
-
-### 8.3. Pipeline training, model và bàn giao nhánh A 
-
-FallTCN nhận [N,54,30], gồm 2–3 tầng Conv1d hidden khoảng 32, kernel 3 và dilation 1/2/4, activation ReLU, dropout nhỏ và linear binary head. Nếu dùng causal padding thì crop phần phải để không nhìn vượt mốc quyết định; cũng có thể dùng toàn bộ 30 mẫu quá khứ với pooling vì mọi mẫu đều đã quan sát. Script huấn luyện từ đầu weights của TCN, pose luôn frozen. Không thêm Transformer, autoencoder hoặc 10 lớp hành vi như sample. 
-
-```
-# Thực thi từ root sau khi manifest/nhãn/split đã được kiểm:
-python -m training.manifest --source data/raw/urfd --output
-data/manifests/clips.csv
-python -m training.extract --manifest data/manifests/clips.csv --labels
-data/labels/intervals.csv --output data/features
-python -m training.train --config configs/train.yaml --splits data/splits.json --
-features data/features --epochs 2
-python -m training.train --config configs/train.yaml --splits data/splits.json --
-features data/features
-python -m training.evaluate --split val --mode trained --weights models/fall_tcn.pt
---output evaluation/validation.json
-python scripts/ai_smoke.py --source <video> --mode trained
-```
-
-Các CLI flags là hợp đồng cần triển khai trong script, không phải lệnh của một package bên ngoài đã có sẵn. Train loop: model.train(), zero_grad(), logits=model(X), 
-
-BCEWithLogitsLoss(logits,y), backward(), optimizer.step(); validation dùng model.eval() và inference_mode/no_grad. Bắt đầu batch 16/32, Adam learning rate khoảng 1e-3, tối đa 30 epoch và early stopping patience 5; tất cả là cấu hình thử, điều chỉnh theo pilot chứ không đảm bảo tối ưu. Dùng class weight hoặc sampler khi lệch lớp, không cùng lúc tăng mọi trọng số mà không kiểm hiệu ứng. 
-
-Lưu state_dict tốt nhất theo validation; meta ghi input_dim, window, sample_hz, feature_version, label map, seed, split hash, pose weights hash và threshold được chọn trên val. Load bằng FallTCN đúng kiến trúc, torch.load(...,map_location="cpu",weights_only=True), load_state_dict và eval trước inference [S13]. Không tải checkpoint không rõ nguồn. Bàn giao trọn bộ weights+meta+config+1 clip kiểm chứng+output shape, không chỉ gửi một file .pt không biết dùng. 
-
-|**Tuần**|**Học và lập trình**|**File/đầu ra kiểm chứng**|**Bàn giao và dự phòng**|
-|---|---|---|---|
-|1|Dataset/group split/label, pose<br>extraction pilot, cố định<br>timestamp/COCO17.|manifest.py; clips.csv;<br>intervals.csv; splits.json;<br>extract.py; cache .npz mẫu.|Ngày 5: SV2 nhận<br>interface/pose; nếu dữ liệu<br>chưa có, giữ B P0, A chỉ<br>pilot chưa đánh giá.|
-|2|Dataset windows, TCN/logits/loss,<br>train 2 epoch rồi early stop, val<br>threshold, load adapter.|dataset.py; tcn.py; train.py;<br>evaluate.py; trained.py;<br>fall_tcn.pt/meta khi train thật.|Ngày 10: so A/B trên val<br>cùng hardware; A không đạt<br>thì không lên MVP, backend<br>không đổi API.|
-|3|Phân tích FP/FN; một thử nghiệm<br>nhỏ về imbalance/LR nếu còn giờ,<br>replay event chung state machine.|validation.json cập nhật;<br>checkpoint/meta có version;<br>test_ai_sequence.py.|Tối đa 4 giờ cho A; ngày 15<br>đóng băng. Nếu không có<br>cải thiện, giữ checkpoint thử<br>nghiệm và B làm demo.|
-|4|Test khóa, camera ngoài miền,<br>CPU load và benchmark, kiểm<br>metadata.|final.json có số đo;<br>model/config/hash cuối; không<br>xuất model giả khi A chưa train<br>xong.|Nếu A là MVP nhưng lỗi<br>deploy chưa sửa trong ngân<br>sách, quay B đã test; không<br>train gấp từ đầu.|
-
-
-
-Tài nguyên và thời gian là ước lượng lập kế hoạch: với TCN nhỏ trên cache pose, RAM khoảng vài GB thường đủ; GPU không phải điều kiện để code/train pilot, nhưng trích pose có thể là phần chậm nhất. Dự trù 1–4 giờ trích xuất unattended trên CPU cho bộ thử nhỏ đến trung bình và 0.5–3 giờ một lượt train CPU; GPU phù hợp có thể giảm. Không dùng các khoảng này như benchmark: ngày 4 đo 2–4 clip và 100 batch rồi ngoại suy; nếu vượt cửa sổ làm việc thì giảm subset có nhãn, không lấy thời gian ngoài kế hoạch để mặc nhiên cứu tiến độ. Không đưa huấn luyện pose từ đầu vào 240 giờ. 
-
-### 8.4. Pretrained B: so lựa chọn và lộ trình riêng 
+### 8.3. Pretrained model và lộ trình triển khai 
 
 |**Giải pháp**|**Đầu ra có sẵn**|**Cần bổ sung và quyết định**|
 |---|---|---|
 |YOLO11n-pose +<br>ByteTrack|Box, COCO-17 keypoint; tracker qua<br>track() [S3, S4].|Chọn chính: feature + onset + máy trạng<br>thái. Không có nhãn fall tự động chỉ từ<br>weights pose.|
+
+
+
+|**Giải pháp**|**Đầu ra có sẵn**|**Cần bổ sung và quyết định**|
+|---|---|---|
 |MediaPipe Pose<br>Landmarker|Landmarks cơ thể theo ảnh/video, có<br>tọa độ ảnh và world coordinates [S5].|Dự phòng khi YOLO không đáp ứng máy:<br>cần adapter mapping; world coordinates<br>không tự thành khoảng cách người tới<br>sàn. Không đổi giữa tuần nếu không<br>benchmark.|
 |Action model/checkpoint<br>của sample|Sample có model chuỗi và<br>feature/label contract riêng [S2].|Chỉ tham khảo: không load vào input 54<br>chiều mới; cần cùng<br>normalization/window/classes. Không làm<br>đường găng vì phụ thuộc nặng.|
 
 
 
-B không cần train pose nhưng vẫn cần video ngã/không ngã để tune và đánh giá. Nhánh này gọi PoseEstimator → PoseBuffer → feature → RuleScorer → máy trạng thái. Lưu rules/config có version tương đương model artifact; không gọi điều chỉnh ngưỡng là “huấn luyện YOLO”. CPU inference có thể dùng; nếu chậm thử input 320, 1 người, 1 camera, 
-
-preview thấp. Đổi MediaPipe sẽ cần mapping/feature_version mới và làm lại kiểm chứng, nên chỉ quyết định đầu tuần 1 nếu không chạy được YOLO. 
+Phương án đã chốt giữ nguyên weights pretrained nhưng vẫn cần video ngã/không ngã để tune và đánh giá. Pipeline gọi PoseEstimator → PoseBuffer → feature → RuleScorer → máy trạng thái. Lưu rules/config có version tương đương model artifact; không gọi điều chỉnh ngưỡng là “huấn luyện YOLO”. CPU inference có thể dùng; nếu chậm thử input 320, 1 người, 1 camera, preview thấp. Đổi MediaPipe sẽ cần mapping/feature_version mới và làm lại kiểm chứng, nên chỉ quyết định đầu tuần 1 nếu không chạy được YOLO. 
 
 |**Tuần**|**Kiến thức và công việc**|**File/đầu ra**|**Đo và tích hợp**|
 |---|---|---|---|
 |1|VideoCapture, BGR/shape, pretrained<br>weights, confidence/track ID; smoke<br>pose và mock contract.|pose.py; interface.py; mock.py;<br>buffer.py; ai_smoke.py; yolo11n-<br>pose.pt.|Ngày 5 chạy clip không<br>người/có người, reset;<br>SV2 dùng cùng interface.|
-|2|Góc/vận tốc/box; lịch sử onset; low<br>posture 2 s; latch/recovery; tune val.|features.py; pretrained.py;<br>state_machine.py; ai.yaml;<br>test_ai_sequence.py.|Ngày 8 B vào RTSP; ngày<br>10 có validation và tốc độ,<br>là fallback cho A.|
-|3|Hard negatives, thiếu khớp/gap/ID<br>churn, event one-shot, đồng bộ<br>model_id.|Sửa features/rules/state;<br>validation.json; contract<br>transition hoàn chỉnh.|Ngày 14–15 B hoặc A tạo<br>event push thật, không<br>phải pose demo độc lập.|
+|2|Góc/vận tốc/box; lịch sử onset; low<br>posture 2 s; latch/recovery; tune val.|features.py; pretrained.py;<br>state_machine.py; ai.yaml;<br>test_ai_sequence.py.|Ngày 8 pretrained vào<br>RTSP; ngày 10 có<br>validation và tốc độ.|
+|3|Hard negatives, thiếu khớp/gap/ID<br>churn, event one-shot, đồng bộ<br>model_id.|Sửa features/rules/state;<br>validation.json; contract<br>transition hoàn chỉnh.|Ngày 14–15 pretrained<br>pipeline tạo event push<br>thật, không phải pose<br>demo độc lập.|
 |4|Domain shift/camera thật, profile và<br>held-out event metrics.|Config/weights pose cuối;<br>final.json; smoke/regression.|Một camera thật và RTSP<br>giả lập; đo<br>FPS/FN/FA/latency; giữ<br>giới hạn thực.|
 
 
 
-### 8.5. So sánh hai hướng trên cùng hệ thống 
+### 8.4. Đặc điểm của phương án pretrained đã chốt 
 
-|**Tiêu chí**|**A — TCN tự train trên pose**|**B — pose pretrained + luật thời gian**|
-|---|---|---|
-|Độ khó|Cao hơn: dữ<br>liệu/nhãn/split/train/load/evaluate thêm.|Vừa: hình học, thời gian, chất lượng pose,<br>máy trạng thái vẫn cần làm đúng.|
-|Kiến thức|PyTorch tensors, Conv1d,<br>loss/optimizer/overfit + toàn bộ nền CV<br>chung.|CV, keypoint, kinematics, validation và<br>state machine; không cần train loop.|
-|Giờ thực hiện|Khoảng 20–24 giờ riêng cho A, dùng lại<br>pose/features/đánh giá.|Khoảng 20–24 giờ baseline B, chưa tính<br>phần chung; phù hợp giữ đường găng.|
-|Dataset|Cần nhãn/đa dạng/split tốt; URFD nhỏ,<br>không đủ chứng minh cho mọi người cao<br>tuổi.|Không cần nhãn train pose; vẫn cần<br>validation/test và hard negatives.|
-|GPU|Không bắt buộc cho TCN nhỏ; pose<br>extraction/huấn luyện lớn sẽ hưởng lợi nếu<br>có.|Không bắt buộc; CPU cần benchmark tại<br>input/máy cụ thể.|
-|Inference|Pose + TCN nhỏ; chi phí pose thường<br>chính, phải đo thực.|Pose + phép tính luật; có thể nhẹ hơn<br>nhưng không hứa FPS.|
-|Độ chính xác kỳ<br>vọng|Có thể học mẫu tốt hơn nhưng dễ overfit;<br>không đưa tỷ lệ trước đo.|Dễ giải thích, có thể nhạy góc camera;<br>không bảo đảm ít FP hơn A.|
-|Cách kiểm chứng|Cùng held-out group, cùng event<br>matching/FP-hour/latency; test không<br>tuning.|Dùng chính protocol đó; threshold chỉ chọn<br>trên val.|
+|**Tiêu chí**|**Pose pretrained + luật thời gian**|
+|---|---|
+|Độ khó|Vừa: hình học, thời gian, chất lượng pose, máy trạng thái vẫn cần làm đúng.|
+|Kiến thức|CV, keypoint, kinematics, validation và state machine; không cần train loop.|
+|Giờ thực hiện|Khoảng 20–24 giờ pretrained pipeline, chưa tính phần chung; phù hợp giữ đường găng.|
+|Dataset|Không cần nhãn train pose; vẫn cần validation/test và hard negatives.|
 
 
 
-|**Tiêu chí**|**A — TCN tự train trên pose**|**B — pose pretrained + luật thời gian**|
-|---|---|---|
-|Realtime|Được nếu cache online, nhịp<br>mẫu/metadata đúng và đo đạt.|Được nếu pose đủ nhanh và confirmation<br>có timestamp.|
-|Khả năng 4 tuần|Khả thi ở phạm vi classifier nhỏ, không<br>train toàn vision từ đầu.|Khả thi hơn để có MVP ổn định, vẫn phải<br>test phần cứng và push.|
-|Rủi ro|Thiếu nhãn, leakage, overfit,<br>shape/normalization lệch runtime.|Threshold nhạy camera, ngồi/nằm nhanh<br>gây nhầm, ngã chậm bỏ sót.|
-|Mức phù hợp|Nhánh học thêm có giới hạn giờ, không bắt<br>buộc thắng baseline.|Hướng chính khuyến nghị cho nhóm năm<br>2; cùng interface hỗ trợ đổi sau.|
+|**Tiêu chí**|**Pose pretrained + luật thời gian**|
+|---|---|
+|GPU|Không bắt buộc; CPU cần benchmark tại input/máy cụ thể.|
+|Inference|Pose + phép tính luật; có thể nhẹ hơn nhưng không hứa FPS.|
+|Độ chính xác kỳ<br>vọng|Dễ giải thích, có thể nhạy góc camera; chất lượng phải đo trên validation/test.|
+|Cách kiểm chứng|Dùng chính protocol đó; threshold chỉ chọn trên val.|
+|Realtime|Được nếu pose đủ nhanh và confirmation có timestamp.|
+|Khả năng 4 tuần|Khả thi hơn để có MVP ổn định, vẫn phải test phần cứng và push.|
+|Rủi ro|Threshold nhạy camera, ngồi/nằm nhanh gây nhầm, ngã chậm bỏ sót.|
+|Mức phù hợp|Hướng đã chốt cho nhóm năm 2; cùng detector interface với backend.|
 
 
 
-### 8.6. Cổng quyết định và interface thay model 
+### 8.5. Mốc kiểm chứng và detector interface 
 
-Ngày 5: pose/RTSP/app và push smoke phải chạy; nếu môi trường/dataset chưa đạt thì ưu tiên B và sửa tích hợp. Ngày 10: A chỉ được chọn nếu train/load thật, split không leakage, validation ít nhất không kém B về recall/FP trong cùng protocol, tốc độ phù hợp và không còn lỗi shape/version. Với số mẫu ít hoặc bằng chứng không rõ, giữ B. Ngày 15: đóng băng model/config để tuần 4 test và sửa lỗi; không đổi sang kiến trúc lớn. 
+Ngày 5: pose pretrained/RTSP/app và push smoke phải chạy; nếu môi trường/dataset chưa đạt thì ưu tiên sửa tích hợp. Ngày 10: kiểm pretrained load thật, split validation/test không leakage, recall/FP và tốc độ theo cùng protocol, không còn lỗi shape/version; chốt ngưỡng theo validation. Với số mẫu ít hoặc bằng chứng không rõ, ghi rõ giới hạn. Ngày 15: đóng băng model/config để tuần 4 test và sửa lỗi; giữ nguyên weights pretrained. 
 
 ```
-# Backend không thay API khi chuyển nhánh:
-detector = create_detector(settings.ai_mode)  # pretrained hoặc trained
+# Backend dùng pretrained detector qua cùng API:
+detector = create_detector(settings.ai_mode)  # ai_mode = pretrained
 detector.reset(stream_session_id)
 update = detector.process(frame_packet)
 for candidate in update.candidates:
     transition = states.update(candidate, frame_packet.captured_mono)
     if transition.just_confirmed:
+```
+
+```
         events.create_once(transition)
 ```
 
-Không chạy A và B đồng thời trong mọi frame production để “vừa test vừa dùng” nếu chưa kiểm tài nguyên. Offline evaluation có thể chạy lần lượt trên cùng cache; online MVP chỉ một scorer active. Nếu checkpoint A lỗi lúc startup, factory ghi rõ fallback_to=pretrained trong status và model_id mới. Không fallback âm thầm rồi báo kết quả của A. 
+Online MVP dùng detector pretrained và một scorer luật active. Nếu weights pretrained lỗi lúc startup, factory ghi rõ AI ERROR và nguyên nhân trong status; không phát kết quả giả hoặc âm thầm đổi model. Offline evaluation dùng cùng config và model_id với runtime. 
 
 ## 9. Cấu trúc source và quản lý file 
 
@@ -2065,19 +2026,18 @@ fallguard/
   configs/
     app.yaml
     ai.yaml
-    train.yaml
   deploy/
     mediamtx.yml
   backend/
     main.py
     config.py
+```
+
+```
     contracts.py
     camera/
       reader.py
       latest.py
-```
-
-```
     pipeline.py
     api/
       routes.py
@@ -2098,16 +2058,8 @@ fallguard/
       buffer.py
       features.py
       pretrained.py
-      trained.py
       state_machine.py
       factory.py
-      tcn.py
-  training/
-    manifest.py
-    extract.py
-    dataset.py
-    train.py
-    evaluate.py
   data/
     manifests/
       clips.csv
@@ -2123,9 +2075,10 @@ fallguard/
     measure_e2e.py
   models/
     yolo11n-pose.pt
-    fall_tcn.pt
-    fall_tcn.meta.json
   evaluation/
+    manifest.py
+    extract.py
+    evaluate.py
     cases.csv
     validation.json
     final.json
@@ -2146,59 +2099,18 @@ fallguard/
         api_client.dart
         device_store.dart
         ws_client.dart
-```
-
-```
         notification_service.dart
         alert_coordinator.dart
         alarm_service.dart
-      screens/
-        pair_screen.dart
-        home_screen.dart
-        alert_screen.dart
-      widgets/
-        camera_view.dart
-      firebase_options.dart
-    android/
-      app/
-        google-services.json
-        build.gradle.kts
-        src/
-          main/
-            AndroidManifest.xml
-            res/
-              raw/
-                fall_alarm.wav
-                keep.xml
-              drawable/
-                ic_stat_fall.xml
-          debug/
-            AndroidManifest.xml
-    assets/
-      audio/
-        fall_alarm.wav
-    test/
-      models_test.dart
-      alert_coordinator_test.dart
-    integration_test/
-      flow_test.dart
-    build/
-      app/
-        outputs/
-          flutter-apk/
-            app-debug.apk
-  runtime/
-    fallguard.db
-  data/raw/                        # dữ liệu nguồn, không commit
 ```
 
-Thêm __init__.py rỗng ở backend, camera, api, alerts, ai và training khi cần package import; file này không có logic nghiệp vụ. Flutter/Android còn có skeleton Gradle, MainActivity và icon launcher do flutter create sinh; giữ mặc định và chỉ chỉnh các file Android được liệt kê khi nhiệm vụ yêu cầu. Không coi hàng trăm file build/cache sinh tự động là nhiệm vụ thủ công. runtime/ và data/raw không đưa vào git; dùng URL nguồn/checksum và script để tái tạo dữ liệu được phép. 
+<mark>`screens/ pair_screen.dart home_screen.dart alert_screen.dart widgets/ camera_view.dart firebase_options.dart android/ app/ google-services.json build.gradle.kts src/ main/ AndroidManifest.xml res/ raw/ fall_alarm.wav keep.xml drawable/ ic_stat_fall.xml debug/ AndroidManifest.xml assets/ audio/ fall_alarm.wav test/ models_test.dart alert_coordinator_test.dart integration_test/ flow_test.dart build/ app/ outputs/ flutter-apk/ app-debug.apk runtime/ fallguard.db data/raw/                        # dữ liệu nguồn, không commit`</mark> Thêm __init__.py rỗng ở backend, camera, api, alerts, ai và evaluation khi cần package import; file này không có logic nghiệp vụ. Flutter/Android còn có skeleton Gradle, MainActivity và icon launcher do flutter create sinh; giữ mặc định và chỉ chỉnh các file Android được liệt kê khi nhiệm vụ yêu cầu. Không coi hàng trăm file build/cache sinh tự động là nhiệm vụ thủ công. runtime/ và data/raw không đưa vào git; dùng URL nguồn/checksum và script để tái tạo dữ liệu được phép. 
 
 ### 9.2. Chủ sở hữu theo module 
 
 |**Thư mục**|**Sở**<br>**hữu**|**Trách nhiệm và hướng phụ thuộc**|
 |---|---|---|
-|backend/ai/; training/; models/; data/;<br>evaluation/|SV1|Tạo khớp/feature/score/state machine; training và đánh giá.<br>Không import Firebase, Flutter hoặc route API trong AI.|
+|backend/ai/; models/; data/;<br>evaluation/|SV1|Tạo khớp/feature/score/state machine; tích hợp pretrained<br>model và đánh giá. Không import Firebase, Flutter hoặc<br>route API trong AI.|
 |backend/camera/; backend/pipeline.py|SV2|Đọc frame, schedule, reset, gọi detector interface; không<br>viết trực tiếp thuật toán phân loại ngã ở routes.|
 |backend/api/; auth.py; pairing.py;<br>storage.py|SV2|Quyền thiết bị, API/WS/video, DB. Không xuất secret trong<br>JSON/status.|
 
@@ -2220,14 +2132,13 @@ Thêm __init__.py rỗng ở backend, camera, api, alerts, ai và training khi c
 
 |**File**|**Chức năng**|**Chủ**|**Tạo**|**Ghé**<br>**p**|**Điều kiện hoàn thành**|
 |---|---|---|---|---|---|
-|`F001 · pyproject.toml`|Khai báo package<br>Python và dải Python<br>3.11|SV2|1|1|Import backend/training từ<br>root ổn định|
+|`F001 · pyproject.toml`|Khai báo package<br>Python và dải Python<br>3.11|SV2|1|1|Import backend/evaluation từ<br>root ổn định|
 |`F002 ·`<br>`requirements.lock.txt`|Khóa dependency sau<br>smoke test|SV2|1|1|Cài lại trên môi trường sạch,<br>import được|
 |`F003 · .env.example`|Tên biến cấu hình và<br>placeholder không bí<br>mật|SV2|1|1|Không có credential thật<br>trong repo|
 |`F004 · .gitignore`|Loại secret, runtime,<br>data lớn và build khỏi<br>git|SV2|1|1|.env, credential JSON,<br>runtime DB không được<br>commit|
 |`F005 · README.md`|Lệnh cài/chạy và thao<br>tác vận hành MVP|SV2|1|1|Có lệnh smoke và giới hạn<br>bản chạy đúng thực tế|
 |`F006 · configs/app.yaml`|Timeout, camera, rate<br>preview, runtime DB|SV2|1|1|Giá trị lỗi bị báo lúc startup|
-|`F007 · configs/ai.yaml`|Model, cửa sổ và<br>ngưỡng luật/xác nhận|SV1|1|2|A/B đổi bằng config; không<br>hardcode ngưỡng|
-|`F008 · configs/train.yaml`|Seed, split, batch và<br>siêu tham số train|SV1|1|2|Seed/split/feature_version<br>được khóa cùng checkpoint|
+|`F007 · configs/ai.yaml`|Model, cửa sổ và<br>ngưỡng luật/xác nhận|SV1|1|2|Pretrained và ngưỡng đặt<br>bằng config; không hardcode<br>ngưỡng|
 
 
 
@@ -2255,52 +2166,41 @@ Thêm __init__.py rỗng ở backend, camera, api, alerts, ai và training khi c
 |**File**|**Chức năng**|**Chủ**|**Tạo**|**Ghé**<br>**p**|**Điều kiện hoàn thành**|
 |---|---|---|---|---|---|
 |`F025 ·`<br>`backend/alerts/fcm.py`|Sender FCM: smoke<br>T1, adapter đầy đủ T3|SV2|1|1|Accepted phân biệt delivered;<br>secret chỉ backend|
-|`F026 ·`<br>`backend/ai/interface.py`|Protocol detector và<br>scorer thay thế được|SV1|1|1|Mock/B/A cùng interface;<br>backend không import TCN<br>trực tiếp|
+|`F026 ·`<br>`backend/ai/interface.py`|Protocol detector và<br>scorer thay thế được|SV1|1|1|Mock/pretrained cùng<br>interface; backend không<br>import chi tiết pose trực tiếp|
 |`F027 · backend/ai/mock.py`|Output giả có nhãn<br>is_test ở nguồn phát<br>triển|SV1|1|1|Không bật mock trong<br>nghiệm thu AI thật|
 |`F028 · backend/ai/pose.py`|Load pose một lần,<br>box/keypoint và track<br>ID|SV1|1|1|Không có người/ID/khớp<br>thiếu không crash|
 |`F029 ·`<br>`backend/ai/buffer.py`|Cửa sổ theo<br>track/session có<br>timestamp|SV1|1|2|Không nối qua gap; không<br>đếm trùng frame_id|
-|`F030 ·`<br>`backend/ai/features.py`|Feature/chuẩn hóa<br>dùng chung train và<br>runtime|SV1|2|2|Cùng clip tạo feature giống<br>offline/online|
+|`F030 ·`<br>`backend/ai/features.py`|Feature/chuẩn hóa<br>dùng chung đánh giá<br>offline và runtime|SV1|2|2|Cùng clip tạo feature giống<br>offline/online|
 |`F031 ·`<br>`backend/ai/pretrained.py`|Scorer luật dùng pose<br>pretrained|SV1|2|2|Không kết luận ngã từ một<br>pose nằm|
-|`F032 ·`<br>`backend/ai/trained.py`|Adapter load TCN và<br>kiểm metadata|SV1|2|2|A/B đổi config; checkpoint<br>thiếu quay B rõ ràng|
 |`F033 ·`<br>`backend/ai/state_machine.`<br>`py`|Xác nhận, latch<br>episode, recovery|SV1|2|2|Giữ nằm không báo lặp; gap<br>không tăng confirmation|
-|`F034 ·`<br>`backend/ai/factory.py`|Tạo mock/B/A theo<br>config|SV1|1|1|Không load model mỗi<br>request; báo lỗi rõ|
-|`F035 · backend/ai/tcn.py`|Kiến trúc phân loại<br>chuỗi nhỏ dùng chung|SV1|2|2|Forward CPU chạy được;<br>shape có kiểm tra|
+|`F034 ·`<br>`backend/ai/factory.py`|Tạo mock/pretrained<br>theo config|SV1|1|1|Không load model mỗi<br>request; báo lỗi rõ|
 |`F087 ·`<br>`runtime/fallguard.db`|Dữ liệu runtime do<br>schema/storage sinh|SV2|1|1|Restart giữ pairing; file không<br>commit, không chứa tài<br>khoản|
 
 
 
-#### 9.3.2. AI training, dữ liệu và test Python 
+#### 9.3.2. Đánh giá AI, dữ liệu và test Python 
 
 |**File**|**Chức năng**|**Chủ**|**Tạo**|**Ghé**<br>**p**|**Điều kiện hoàn thành**|
 |---|---|---|---|---|---|
-|`F036 ·`<br>`training/manifest.py`|Lập danh sách clip,<br>nguồn và group chống<br>leakage|SV1|1|1|Một clip/2 góc cùng sự kiện<br>chung group|
-
-
-
-|**File**|**Chức năng**|**Chủ**|**Tạo**|**Ghé**<br>**p**|**Điều kiện hoàn thành**|
-|---|---|---|---|---|---|
+|`F036 ·`<br>`evaluation/manifest.py`|Lập danh sách clip,<br>nguồn và group chống<br>leakage|SV1|1|1|Một clip/2 góc cùng sự kiện<br>chung group|
 |`F037 ·`<br>`data/manifests/clips.csv`|Manifest dữ liệu nguồn<br>có provenance|SV1|1|2|FPS/nhóm có giá trị xác<br>minh; unknown được ghi rõ|
 |`F038 ·`<br>`data/labels/intervals.csv`|Nhãn onset/impact/end<br>và hard negative|SV1|1|2|Không gắn mọi frame clip<br>ngã là positive|
-|`F039 · data/splits.json`|Train/val/test theo<br>group và seed|SV1|1|2|Group giao nhau rỗng, khóa<br>trước tuning|
-|`F040 ·`<br>`training/extract.py`|Trích pose/features<br>đúng timestamp|SV1|1|2|Có thể resume; không tải lại<br>model mỗi clip|
+
+
+
+|**File**|**Chức năng**|**Chủ**|**Tạo**|**Ghé**<br>**p**|**Điều kiện hoàn thành**|
+|---|---|---|---|---|---|
+|`F039 · data/splits.json`|Validation/test theo<br>group và seed|SV1|1|2|Group giao nhau rỗng, khóa<br>trước tuning|
+|`F040 ·`<br>`evaluation/extract.py`|Trích pose/features<br>đúng timestamp|SV1|1|2|Có thể resume; không tải lại<br>model mỗi clip|
 |`F041 ·`<br>`data/features/*.npz`|Cache sinh tự động<br>cho từng clip|SV1|1|2|Shape/thời gian khớp; không<br>commit data lớn|
-|`F042 ·`<br>`training/dataset.py`|Loader cửa sổ, nhãn,<br>augment chỉ train|SV1|2|2|Val/test không augment;<br>scaler chỉ fit train nếu dùng|
-|`F043 · training/train.py`|Train TCN nhỏ, early<br>stopping và lưu best|SV1|2|2|Loss hữu hạn; best theo val,<br>không chọn theo test|
-|`F044 ·`<br>`training/evaluate.py`|Đánh giá window và<br>episode theo cùng<br>logic runtime|SV1|2|2|One-to-one matching event;<br>bỏ is_test|
+|`F044 ·`<br>`evaluation/evaluate.py`|Đánh giá window và<br>episode theo cùng<br>logic runtime|SV1|2|2|One-to-one matching event;<br>bỏ is_test|
 |`F045 ·`<br>`scripts/ai_smoke.py`|Chạy 1 clip độc lập để<br>thấy pose/status|SV1|1|1|Không cần backend/app để<br>debug AI|
 |`F046 ·`<br>`scripts/publish_rtsp.sh`|Lệnh FFmpeg phát<br>MP4 vào MediaMTX|SV2|1|1|Dùng real-time pacing,<br>backend thực sự đọc rtsp://|
 |`F047 ·`<br>`scripts/test_push.py`|Thử FCM riêng, không<br>giả kết quả AI|SV2|1|1|Điện thoại nhận test<br>message, không cần pose|
 |`F048 ·`<br>`scripts/measure_e2e.py`|Tính độ trễ từ mốc<br>kiểm thử|SV2|4|4|Không trộn accepted với<br>received; clock lệch bị loại|
 |`F049 · models/yolo11n-`<br>`pose.pt`|Weights pose tải từ<br>nguồn chính thức|SV1|1|1|Ghi nguồn/hash, load được<br>offline sau tải|
-|`F050 · models/fall_tcn.pt`|Checkpoint nhánh A<br>sinh từ training|SV1|2|2|Load lại cho output gần như<br>tương đương; không giả file<br>khi train chưa xong|
-|`F051 ·`<br>`models/fall_tcn.meta.json`|Hợp đồng<br>weights/feature và<br>threshold validation|SV1|2|2|Từ chối shape/version không<br>khớp|
 |`F052 ·`<br>`evaluation/cases.csv`|Danh sách ca test có<br>ground truth/tập dữ<br>liệu|SV1|1|2|Có ngã, ADL, nằm sẵn, che<br>khuất; không dùng test tuning|
 |`F053 ·`<br>`evaluation/validation.jso`<br>`n`|Kết quả chọn<br>ngưỡng/model trên val|SV1|2|2|Kèm denominator và thời<br>gian; không chứa số bịa|
-
-
-
-|**File**|**Chức năng**|**Chủ**|**Tạo**|**Ghé**<br>**p**|**Điều kiện hoàn thành**|
-|---|---|---|---|---|---|
 |`F054 ·`<br>`evaluation/final.json`|Kết quả kỹ thuật test<br>khóa cuối cùng|SV1|4|4|Ghi rõ chưa đo nếu thiếu<br>mẫu, không điền ước lượng<br>thành kết quả|
 |`F055 ·`<br>`tests/test_ai_sequence.py`|Test lỗi temporal và<br>xác nhận meaningful|SV1|2|2|Không test từng getter; kiểm<br>ca rớt mạng/lặp/góc thiếu|
 |`F056 ·`<br>`tests/test_camera.py`|Test timeout/reconnect<br>bằng fake capture|SV2|1|1|Không chờ camera thật trong<br>unit test|
@@ -2321,17 +2221,17 @@ Thêm __init__.py rỗng ở backend, camera, api, alerts, ai và training khi c
 |`F064 ·`<br>`mobile/lib/models.dart`|Parser<br>status/event/pairing có<br>kiểm trường|SV3|1|1|Sai schema/optional field<br>không crash UI|
 |`F065 ·`<br>`mobile/lib/services/api_c`<br>`lient.dart`|HTTP header, timeout<br>và đồng bộ event|SV3|1|1|401 chuyển trạng thái cần<br>ghép; không tự retry claim<br>bừa|
 |`F066 ·`<br>`mobile/lib/services/devic`<br>`e_store.dart`|Lưu khóa và<br>installation trong<br>secure storage|SV3|1|1|Restart còn ghép; unpair xóa<br>sạch khóa/cursor|
-
-
-
-|**File**|**Chức năng**|**Chủ**|**Tạo**|**Ghé**<br>**p**|**Điều kiện hoàn thành**|
-|---|---|---|---|---|---|
 |`F067 ·`<br>`mobile/lib/services/ws_cl`<br>`ient.dart`|WS có auth và backoff<br>theo lifecycle|SV3|1|1|Không tạo socket trùng sau<br>resume; retry có trần|
 |`F068 ·`<br>`mobile/lib/services/notif`<br>`ication_service.dart`|FCM setup,<br>permission, channel và<br>token refresh|SV3|1|1|Foreground/background/<br>terminated thường nhận<br>đúng, không nhận nhầm<br>installation|
 |`F069 ·`<br>`mobile/lib/services/alert`<br>`_coordinator.dart`|Một điểm nhận event<br>từ WS/FCM/REST|SV3|2|2|Cùng event từ hai kênh chỉ<br>báo một lần ở foreground|
 |`F070 ·`<br>`mobile/lib/services/alarm`<br>`_service.dart`|Audio foreground có<br>dừng và timeout|SV3|3|3|Stop ngay; tối đa 10 s; không<br>phát khi sound off|
 |`F071 ·`<br>`mobile/lib/screens/pair_s`<br>`creen.dart`|Dán link và claim<br>không tài khoản|SV3|1|1|Hết hạn/sai server có lỗi dễ<br>hiểu|
 |`F072 ·`<br>`mobile/lib/screens/home_s`<br>`creen.dart`|RTSP form, status,<br>camera, setting và thử<br>push|SV3|1|1|Phân biệt camera connected<br>và AI ready; password che<br>mặc định|
+
+
+
+|**File**|**Chức năng**|**Chủ**|**Tạo**|**Ghé**<br>**p**|**Điều kiện hoàn thành**|
+|---|---|---|---|---|---|
 |`F073 ·`<br>`mobile/lib/screens/alert_`<br>`screen.dart`|Thông tin sự kiện, tắt<br>âm và ack|SV3|2|2|Nút tắt âm/đã xem hoạt động<br>kể cả API tạm lỗi|
 |`F074 ·`<br>`mobile/lib/widgets/camera`<br>`_view.dart`|Hiển thị MJPEG qua<br>HTTP có header|SV3|2|2|Nền app ngắt view; AI<br>backend vẫn chạy|
 |`F075 ·`<br>`mobile/lib/firebase_optio`<br>`ns.dart`|Cấu hình Firebase<br>sinh bởi FlutterFire|SV3|1|1|Đúng project/applicationId<br>của APK|
@@ -2340,18 +2240,19 @@ Thêm __init__.py rỗng ở backend, camera, api, alerts, ai và training khi c
 |`F078 ·`<br>`mobile/android/app/src/ma`<br>`in/AndroidManifest.xml`|Internet, notification<br>permission và<br>metadata|SV3|1|1|Quyền runtime được xin;<br>default channel tồn tại|
 |`F079 ·`<br>`mobile/android/app/src/de`<br>`bug/AndroidManifest.xml`|Cho HTTP nội bộ chỉ<br>trong APK debug|SV3|1|1|Release không vô tình mở<br>cleartext toàn cục|
 |`F080 ·`<br>`mobile/assets/audio/fall_`<br>`alarm.wav`|Âm ngắn cho<br>foreground có quyền<br>sử dụng|SV3|3|3|Nghe rõ trên điện thoại; cùng<br>nội dung raw sound|
-
-
-
-|**File**|**Chức năng**|**Chủ**|**Tạo**|**Ghé**<br>**p**|**Điều kiện hoàn thành**|
-|---|---|---|---|---|---|
 |`F081 ·`<br>`mobile/android/app/src/ma`<br>`in/res/raw/fall_alarm.wav`|Âm của Android<br>notification channel|SV3|3|3|Channel sound hoạt động lúc<br>khóa màn hình|
 |`F082 ·`<br>`mobile/android/app/src/ma`<br>`in/res/drawable/ic_stat_f`<br>`all.xml`|Icon notification đơn<br>sắc đúng resource|SV3|3|3|Notification không mất icon<br>trên máy thật|
 |`F083 ·`<br>`mobile/android/app/src/ma`<br>`in/res/raw/keep.xml`|Giữ raw sound/icon<br>nếu shrink resource|SV3|3|3|Release test không bị loại<br>sound/icon; debug vẫn build|
 |`F084 ·`<br>`mobile/test/models_test.d`<br>`art`|Parser schema và dữ<br>liệu thiếu|SV3|2|2|Schema cũ/sai không làm<br>app crash|
 |`F085 ·`<br>`mobile/test/alert_coordin`<br>`ator_test.dart`|Dedup và<br>lifecycle/audio bằng<br>fake service|SV3|3|3|WS+FCM cùng event chỉ 1<br>foreground alarm; không<br>nhận sai backend|
 |`F086 ·`<br>`mobile/integration_test/f`<br>`low_test.dart`|Luồng pair/status/ack<br>cơ bản với backend<br>thử|SV3|4|4|Test tự động cho UI chính;<br>push thật vẫn test trên máy<br>bằng checklist|
-|`F088 ·`<br>`mobile/build/app/outputs/`<br>`flutter-apk/app-debug.apk`|Bản app debug sinh<br>bằng Flutter build|SV3|4|4|Cài mới,<br>pairing/RTSP/push/sound/ac<br>k chạy thật|
+
+
+
+|**File**|**Chức năng**|**Chủ**|**Tạo**|**Ghé**<br>**p**|**Điều kiện hoàn thành**|
+|---|---|---|---|---|---|
+|`F088 ·`|Bản app debug sinh|SV3|4|4|Cài mới,|
+|`mobile/build/app/outputs/`<br>`flutter-apk/app-debug.apk`|bằng Flutter build||||pairing/RTSP/push/sound/ac<br>k chạy thật|
 
 
 
@@ -2376,9 +2277,14 @@ Ngoài bảng: runtime/fallguard.db do storage khởi tạo, APK do Flutter buil
 |**Mốc**|**Gói bàn giao**|**Contract/kiểm tra riêng**|**Kiểm tra ghép và stub**|
 |---|---|---|---|
 |Ngày 2|contracts.py + interface.py +<br>MockDetector; JSON mẫu không<br>người/pose invalid/một người.|SV2 import và gọi<br>process(FramePacket); output<br>đủ<br>camera/session/frame_id/candi<br>date.|Pipeline chạy bằng mock với<br>file video; không cần weights<br>để API/WS phát triển.|
-|Ngày 5|PoseEstimator, model path/hash,<br>ai_smoke và cache pilot.|AI đọc clip độc lập; reset không<br>giữ ID/buffer từ clip khác.|Backend load factory; nếu B<br>chưa có giữ mock ghi rõ<br>development.|
-|Ngày 8|B + features + buffer + state<br>machine, ai.yaml.|Replay ngã/ADL/gap/latch có<br>kết quả; output cùng interface.|RTSP thật giao thức<br>B<br>→<br>→<br>status/WS; A chưa xong<br>không chặn.|
-|Ngày<br>10|Adapter A nếu train/load đã chạy,<br>checkpoint/meta và validation A/B.|Shape [N,54,30],<br>feature_version/hash; CPU load<br>đúng.|Chỉ đổi config ai.mode và<br>restart; REST/WS/mobile<br>không đổi.|
+|Ngày 5|PoseEstimator, model path/hash,<br>ai_smoke và cache pilot.|AI đọc clip độc lập; reset không<br>giữ ID/buffer từ clip khác.|Backend load factory; nếu<br>pretrained detector chưa có<br>giữ mock ghi rõ<br>development.|
+
+
+
+|**Mốc**|**Gói bàn giao**|**Contract/kiểm tra riêng**|**Kiểm tra ghép và stub**|
+|---|---|---|---|
+|Ngày 8|Pretrained detector + features +<br>buffer + state machine, ai.yaml.|Replay ngã/ADL/gap/latch có<br>kết quả; output cùng interface.|RTSP thật giao thức→<br>pretrained detector→<br>status/WS.|
+|Ngày<br>10|Pretrained model load thật,<br>config/hash và validation.|Feature window [30,54],<br>feature_version/hash; CPU load<br>đúng.|Giữ config<br>ai.mode=pretrained và<br>restart; REST/WS/mobile<br>không đổi.|
 |Ngày<br>11–15|Transition just_confirmed,<br>episode_id; cấu hình khóa.|Cùng episode không<br>just_confirmed nhiều lần;<br>invalid/gap không confirmed.|EventService create_once;<br>nếu sender chậm vẫn AI tiếp<br>tục.|
 |Ngày<br>19|Weights/meta/config/hash cuối,<br>lệnh smoke.|Process sạch import/load/test<br>xong.|Backend demo dùng đúng<br>model_id; không mock.|
 
@@ -2392,11 +2298,6 @@ Ngoài bảng: runtime/fallguard.db do storage khởi tạo, APK do Flutter buil
 |Ngày 3–<br>5|Pair link/claim thực, khóa device,<br>WS mock, endpoint push test.|Link sai/hết hạn/401 và trạng<br>thái UI.|Pair thật<br>status/WS<br>→<br>→<br>push thử trên Android.|
 |Ngày 7|MJPEG có header và PUT camera<br>async.|CameraView loading/error,<br>fixture status.|App nhập RTSP và xem<br>stream; đóng viewer backend<br>không stop.|
 |Ngày 10|Event schema chuẩn (Chương 3),<br>candidate/status phân biệt<br>confirmed.|Coordinator dedup bằng<br>event_id và installation.|AI thật làm UI đổi trạng thái,<br>chưa tự tạo alarm từ<br>candidate.|
-
-
-
-|**Mốc**|**Gói bàn giao**|**Cách SV3 test riêng**|**Cách test tích hợp**|
-|---|---|---|---|
 |Ngày 12<br>–15|Push registration, events<br>cursor/ack/test, notification<br>payload/channel.|FCM console/script thử nhận<br>và navigation trước AI.|WS+FCM event thật;<br>foreground và<br>background/lock screen.|
 |Ngày 19<br>–20|Backend/config chạy sạch;<br>credential ngoài repo.|APK cài mới, pair lại.|Toàn tuyến RTSP thật/giả lập,<br>sound/ack/reconnect.|
 
@@ -2411,13 +2312,13 @@ Ngày 2 tạo ApiClient interface và fixture các JSON trong Chương 3; dựng
 
 
 <!-- Start of picture text -->
-LUONG SU KIEN: WEBSOCKET VA PUSH DUOC TACH RIENG<br>—,_ — —O_o<br>CAMERA+ Al | BACKEND | FCM l ANDROID |<br>1. Transition confirmed<br>ls<br>2. Luu event + outbox<br>3. WS: app dang mé<br>ee<br>4, Giti déc lap UL<br>|<br>5. OS notification<br>————<br>6. Mé app<br>a<br>a / déng bé / ack idempotent<br>ung event _id trén REST, WS va FCM. FCM accepted khéng cé nghia app da nhan.<br><!-- End of picture text -->
+LUONG SU KIEN: WEBSOCKET VA PUSH DUOC TACH RIENG<br>CAMERA+ Al BACKEND [rem ANDROID<br>1. Transition confirmed<br>eee<br>2. Luu event + outbox<br>3. WS: app dang mo<br>a<br>4. Gui déc lap UL<br>_<br>5. OS notification<br>Oe<br>6. Mé app/ déng bé / ack idempotent<br>a<br>Cling event_id trén REST, WS va FCM. FCM accepted khéng cé nghia app da nhan.<br><!-- End of picture text -->
 
 - _Hình 3. Trình tự tạo và phân phối sự kiện; push không phụ thuộc app đang giữ WebSocket._ 
 
 - ● 1. Camera gửi RTSP; capture thread nhận frame mới và gắn camera/session/frame/timestamp. 
 
-- 2. Pose → buffer theo track → scorer A/B → candidate; state machine xác nhận đúng một lần cho episode. 
+- 2. Pose → buffer theo track → scorer luật dùng pretrained pose → candidate; state machine xác nhận đúng một lần cho episode. 
 
 - 3. EventService lưu event và outbox sau cùng một giao dịch có ràng buộc unique; transaction kết thúc trước gọi network. 
 
@@ -2448,18 +2349,13 @@ Trước khi ghép, người giao chạy lệnh smoke độc lập và gửi m�
 |T09 — nằm kéo dài|Sau event giữ low posture 90–120<br>s.|Một event episode; hết cooldown<br>không tự gửi lại.|SV1+SV2|
 |T10 — hồi phục/ngã<br>mới|Đứng tin cậy 3 s; qua cooldown;<br>lần ngã khác.|Episode/event mới; không dùng ack<br>để re-arm giả.|SV1|
 |T11 — duplicate<br>event|Cùng event qua WS, FCM và<br>REST theo các thứ tự.|Một foreground banner/audio; event<br>khác vẫn nhận.|SV3|
-
-
-
-|**Mã/ca**|**Đầu vào và thao tác**|**Kết quả mong đợi**|**Phụ trách**|
-|---|---|---|---|
 |T12 — nền và khóa|Home/minimize, lock screen; phát<br>event thật/test.|System notification đúng channel;<br>chạm mở event.|SV2+SV3|
 |T13 —<br>terminated/force-stop|Tắt process thông thường; riêng<br>force-stop trong Settings rồi thử.|Đo terminated theo OS; force-stop<br>ghi giới hạn tới khi mở lại.|SV3|
 |T14 — notification<br>denied/DND|Từ chối quyền, sound off,<br>volume=0 hoặc DND.|UI phản ánh; không hứa sound khi<br>OS chặn; silent channel đúng.|SV3|
 |T15 — mất Internet|LAN còn, Internet backend hoặc<br>điện thoại mất.|AI/WS LAN có thể chạy; FCM<br>unavailable/retry hữu hạn, TTL.|SV2+SV3|
 |T16 — quyền thiết bị|Code hết hạn/claim hai lần; key<br>sai/revoke; device khác sửa push.|Từ chối đúng; không lộ<br>camera/event/endpoint của nhau.|SV2|
 |T17 —<br>restart/endpoint đổi|Restart backend; refresh FCM<br>endpoint; reinstall app.|Giữ installation; đăng ký mới;<br>accepted không retry; re-pair sau<br>mất key.|SV2+SV3|
-|T18 — máy mới/load<br>model|Venv sạch/CPU, thiếu<br>weights/metadata lệch.|Load đúng hoặc fallback B/AI<br>ERROR rõ; không event giả.|SV1+SV2|
+|T18 — máy mới/load<br>model|Venv sạch/CPU, thiếu<br>weights/metadata lệch.|Load pretrained đúng hoặc AI<br>ERROR rõ; không event giả.|SV1+SV2|
 
 
 
@@ -2484,7 +2380,7 @@ Mẫu số bằng 0 thì kết quả “không xác định/chưa đủ dữ li�
 
 |**Chỉ số**|**Mục tiêu thử ban đầu**|**Nghiệm thu và cách xử lý khi không đạt**|
 |---|---|---|
-|AI FPS|Khoảng 8–10 unique frame/s, một<br>camera; sampling thiết kế 10 Hz.|Đo trên máy/demo thực. Nếu thiếu, giảm<br>input/preview; A chỉ chạy khi chất lượng<br>mẫu đúng metadata.|
+|AI FPS|Khoảng 8–10 unique frame/s, một<br>camera; sampling thiết kế 10 Hz.|Đo trên máy/demo thực. Nếu thiếu, giảm<br>input/preview; AI chỉ chạy khi chất lượng<br>mẫu đúng metadata.|
 |Preview FPS|2–3 FPS đủ quan sát; dự phòng<br>snapshot 1 FPS.|Mất preview không được dừng AI; không<br>dùng preview FPS thay AI FPS.|
 |Onset<br>confirmed<br>→|Khoảng 2–5 s trên ca ngã rõ có đủ<br>bằng chứng.|Có confirmation 2 s nên không hứa tức thì;<br>đo p50/p95 và các ca thiếu onset.|
 |Confirmed<br>app<br>→|Mục tiêu khoảng ≤3 s trong điều kiện<br>mạng thử tốt.|Tách foreground WS và background FCM;<br>FCM best effort, không bảo đảm giới hạn<br>OS/mạng.|
@@ -2493,7 +2389,9 @@ Mẫu số bằng 0 thì kết quả “không xác định/chưa đủ dữ li�
 
 
 
-Chỉ số mong muốn không thay thế điều kiện chức năng P0. Một bản demo có thể chạy được toàn tuyến nhưng chưa đạt ngưỡng chất lượng mong muốn; phải tách hai kết luận đó. Nếu không đủ 60 phút ADL trước ngày 20, ghi thời lượng đã thử và FA/hour quy đổi với độ bất định cao, không tự tạo dữ liệu. Nên dùng clip ADL dài có nguồn hợp lệ hoặc một phiên phòng thật được đồng ý để chạy unattended trong thời gian nhóm đang làm task khác. 
+Chỉ số mong muốn không thay thế điều kiện chức năng P0. Một bản demo có thể chạy được toàn tuyến nhưng chưa đạt ngưỡng chất lượng mong muốn; phải tách hai kết luận đó. Nếu không đủ 60 phút ADL trước ngày 20, ghi thời lượng đã thử và FA/hour quy đổi với độ bất 
+
+định cao, không tự tạo dữ liệu. Nên dùng clip ADL dài có nguồn hợp lệ hoặc một phiên phòng thật được đồng ý để chạy unattended trong thời gian nhóm đang làm task khác. 
 
 ### 11.3. Checklist nghiệm thu gắn module, người, ngày và PASS 
 
@@ -2504,12 +2402,7 @@ Chỉ số mong muốn không thay thế điều kiện chức năng P0. Một b
 |C03<br>Đọc liên tục,<br>☐<br>queue hữu hạn|SV2 · D10|latest.py/pipeline.py: AI và hai viewer; không tăng<br>backlog, không xử lý lại frame_id.|Buffer camera có<br>thể còn trễ.|
 |C04<br>Mất kết<br>☐<br>nối/reconnect|SV2+1 ·<br>D18|reader/state machine: T03/T08 PASS; session<br>đổi, warmup, không false fall.|Timeout tùy<br>FFmpeg build.|
 |C05<br>Phát hiện<br>☐<br>người/pose|SV1 · D5|pose.py: có box/keypoint khi thấy người;<br>empty/missing pose không crash.|Không xác định<br>tuổi.|
-|C06<br>Nhận diện diễn<br>☐<br>biến ngã|SV1 · D10|pretrained hoặc trained + state: T05 tạo<br>confirmed từ video có onset.|Chất lượng phải<br>đo, không khẳng<br>định mọi ngã.|
-
-
-
-|**Checkbox chức năng**|**Chủ/mốc**|**Module và cách kiểm tra**<br>**PASS**<br>**→**|**Giới hạn**|
-|---|---|---|---|
+|C06<br>Nhận diện diễn<br>☐<br>biến ngã|SV1 · D10|pretrained + state: T05 tạo confirmed từ video có<br>onset.|Chất lượng phải<br>đo, không khẳng<br>định mọi ngã.|
 |C07<br>Giảm nhầm ADL<br>☐|SV1 · D15|features/state/cases: T06/T07; đếm FP thật trên<br>val/test.|Ngã chậm/che<br>khuất có thể bỏ sót.|
 |C08<br>AI vào backend<br>☐|SV1+2 ·<br>D10|pipeline/interface: update có<br>camera/session/frame/model_id; không numpy<br>trong JSON.|Không dùng mock<br>ở test cuối.|
 |C09<br>Event một<br>☐<br>lần/episode|SV2+1 ·<br>D15|events.py/storage: cùng episode một event_id;<br>T09/T10 đúng recovery.|Không exactly-once<br>cloud.|
@@ -2519,19 +2412,22 @@ Chỉ số mong muốn không thay thế điều kiện chức năng P0. Một b
 |C13<br>Xem hình<br>☐<br>camera|SV2+3 ·<br>D10|stream.py/CameraView: MJPEG có auth hoặc<br>snapshot dự phòng; viewer dừng AI vẫn chạy.|Không audio<br>camera.|
 |C14<br>Alert khi app mở<br>☐|SV3 · D15|Coordinator/WS/FCM: T11 một banner/audio cho<br>event cùng ID.|Đua state có thể có<br>OS notification.|
 |C15<br>Push nền/khóa<br>☐|SV2+3 ·<br>D15, lại<br>D19|FcmSender/NotificationService: T12 trên điện<br>thoại thật; chạm mở đúng event.|Internet/<br>permission/OS cần<br>phù hợp.|
+
+
+
+|**Checkbox chức năng**|**Chủ/mốc**|**Module và cách kiểm tra**<br>**PASS**<br>**→**|**Giới hạn**|
+|---|---|---|---|
 |C16<br>Terminated và<br>☐<br>giới hạn|SV3 · D19|T13 có kết quả theo máy/OS; force-stop không<br>được nhận là bảo đảm hoạt động.|Mở lại để khôi phục<br>sau force-stop.|
 |C17<br>Âm thanh và tắt<br>☐|SV3 · D15|AlarmService/assets/raw/channels: foreground<br>stop ngay, nền sound/silent đúng setting.|OS volume/DND do<br>người dùng.|
 |C18<br>Giới hạn gửi<br>☐<br>lặp/retry|SV2+3 ·<br>D15|Outbox/Coordinator: event-device unique,<br>accepted không retry, TTL, dedup.|FCM accepted<br>không là delivered.|
 |C19<br>Đồng bộ sau<br>☐<br>ngắt|SV2+3 ·<br>D15|Events cursor/resume: event bỏ lỡ hiện lại, không<br>hú toàn bộ lịch sử.|Chỉ giữ dữ liệu gần<br>theo retention.|
-|C20<br>Hai hướng AI có<br>☐<br>đường chạy|SV1 · D10<br>–15|B smoke thật; A manifest→train→load→val pilot<br>nếu dữ liệu đủ; không weights giả.|A không bắt buộc<br>được chọn MVP.|
+|C20<br>Pretrained model<br>☐<br>có đường chạy|SV1 · D10<br>–15|Pretrained smoke thật; weights<br>load→replay→validation; không weights giả.|Giữ nguyên<br>weights pretrained;<br>không tự train<br>model.|
 |C21<br>End-to-end và đo<br>☐|Cả ba ·<br>D20|T01→T05→T12→T17; final.json có mẫu thật,<br>FPS/latency và TP/FP/FN hoặc chưa đủ dữ liệu.|Phạm vi demo,<br>chưa chứng minh<br>24/7.|
 |C22<br>APK và backend<br>☐<br>chạy lại|SV3+2 ·<br>D20|Cài app-debug.apk mới; env sạch,<br>pairing/RTSP/alarm/ack được lặp từ đầu.|Không phát hành<br>cửa hàng/iOS.|
 
 
 
-Tất cả checkbox để trống trong kế hoạch vì nhóm chưa thực hiện kiểm thử. Chỉ đánh dấu sau khi thao tác tương ứng chạy thực. Một push gửi tay chỉ kiểm sender/app; không đủ 
-
-đánh dấu AI end-to-end. Một skeleton trên webcam chỉ kiểm pose; không đủ đánh dấu phát hiện ngã. Nếu nhánh A thiếu dữ liệu thật, ghi đúng blocked/partial và hoàn thiện phần pipeline huấn luyện pilot; không gọi đó là model đã được kiểm chứng. 
+Tất cả checkbox để trống trong kế hoạch vì nhóm chưa thực hiện kiểm thử. Chỉ đánh dấu sau khi thao tác tương ứng chạy thực. Một push gửi tay chỉ kiểm sender/app; không đủ đánh dấu AI end-to-end. Một skeleton trên webcam chỉ kiểm pose; không đủ đánh dấu phát hiện ngã. Nếu thiếu dữ liệu đánh giá thật, ghi đúng blocked/partial và bổ sung ca kiểm chứng; không gọi pretrained pipeline đã được kiểm chứng khi chưa đo. 
 
 ## 12. Ưu tiên, rủi ro và cách chạy bản demo 
 
@@ -2539,29 +2435,24 @@ Tất cả checkbox để trống trong kế hoạch vì nhóm chưa thực hi�
 
 |**Mức**|**Giữ/làm chức năng gì?**|**Điều kiện ưu tiên**|
 |---|---|---|
-|P0 — đường<br>chạy MVP|Một RTSP; reconnect; AI pose+temporal; confirm/latch;<br>event ID; ghép không account có key; Android<br>status/preview; push nền; sound/stop; test toàn tuyến;<br>APK debug.|Mọi yêu cầu cốt lõi của bạn nằm ở<br>đây. Hai hướng AI phải có lộ<br>trình/thử tối thiểu; chỉ một hướng<br>được dùng online cho MVP.|
+|P0 — đường<br>chạy MVP|Một RTSP; reconnect; AI pose+temporal; confirm/latch;<br>event ID; ghép không account có key; Android<br>status/preview; push nền; sound/stop; test toàn tuyến;<br>APK debug.|Mọi yêu cầu cốt lõi của bạn nằm ở<br>đây. Chốt dùng pretrained model<br>cho MVP, giữ nguyên weights và<br>kiểm chứng pipeline online.|
 |P1 — khi P0<br>ổn|QR/deep link tự mở, HTTPS có chứng chỉ cho dùng<br>ngoài lab, thêm hard negatives/threshold per camera,<br>history UI gọn, CPU optimization đã đo.|Nếu chuyển ra mạng công cộng thì<br>HTTPS trở thành điều kiện bắt buộc<br>trước sử dụng, không coi HTTP lab<br>là đủ.|
 |P2 — có thể<br>bỏ|iOS/desktop app, nhiều camera/nhiều người xuyên che<br>khuất, camera discovery, lưu clip/ảnh push,<br>WebRTC/HLS, auto-update, TensorRT/quantization,<br>dashboard lớn.|Không phân bổ trước khi ngày 15<br>P0 PASS. Bỏ P2 trước, không bỏ<br>push/âm/pairing để thêm giao diện.|
 
 
 
-Thứ tự giảm tải: bỏ ảnh/clip push → bỏ overlay skeleton trên preview → preview snapshot 1 FPS → chỉ một device/camera → giữ B thay A nếu A chưa đạt. Luôn giữ đọc RTSP thật giao thức, state machine xác nhận, one-event episode, push nền và âm thanh theo OS. Không giảm bằng cách coi một message WS là push, coi “nằm” là “ngã”, hoặc bỏ khóa truy cập để khỏi sửa pairing. 
+Thứ tự giảm tải: bỏ ảnh/clip push → bỏ overlay skeleton trên preview → preview snapshot 1 FPS → chỉ một device/camera → giữ pretrained pipeline đã chốt. Luôn giữ đọc RTSP thật giao thức, state machine xác nhận, one-event episode, push nền và âm thanh theo OS. Không giảm bằng cách coi một message WS là push, coi “nằm” là “ngã”, hoặc bỏ khóa truy cập để khỏi sửa pairing. 
 
 ### 12.2. Rủi ro và hành động kiểm chứng cụ thể 
 
 |**Rủi ro**|**Phát hiện sớm**|**Giảm rủi ro và mốc quyết định**|
 |---|---|---|
-|Dataset không tải/thiếu<br>nhãn|Ngày 3–4 tải 4 sequence, xem<br>metadata và cache pilot.|A giữ pilot/TCN nhỏ, B là đường chính; không<br>chuyển sang train pose từ đầu.|
-|Leakage/overfit|Assert split groups; so train/val;<br>subject_id unknown không tự bịa.|Khóa split trước windowing; ghi giới hạn<br>recording-independent; không test-tune lặp.|
+|Dataset không tải/thiếu<br>nhãn|Ngày 3–4 tải 4 sequence, xem<br>metadata và cache pilot.|Giữ pretrained pipeline là đường chính; thu<br>hẹp bộ kiểm chứng ban đầu, bổ sung nguồn<br>dữ liệu hợp lệ trong ngân sách.|
+|Leakage/overfit|Assert split groups; so<br>validation/test; subject_id unknown<br>không tự bịa.|Khóa split trước windowing; ghi giới hạn<br>recording-independent; không test-tune lặp.|
 |Báo nhầm ngồi/nằm/cúi|Bộ hard negative từ tuần 2;<br>T06/T07.|Onset + nhiều tín hiệu + thời gian; tune val; giữ<br>số FP thật.|
 |Bỏ sót ngã chậm/che<br>khuất|T08 và clip ngã hướng camera;<br>kiểm thiếu pose.|Không giả dữ liệu; camera đủ toàn thân; công<br>bố điều kiện chưa hỗ trợ và recall đo được.|
 |RTSP block/độ trễ|Ngày 3 camera tắt/sai URL; đo last-<br>frame age.|Timeout tại open, TCP, capture riêng, buffer<br>nhỏ; giảm substream/preview, test actual<br>backend.|
-
-
-
-|**Rủi ro**|**Phát hiện sớm**|**Giảm rủi ro và mốc quyết định**|
-|---|---|---|
-|CPU/GPU không đủ|Benchmark pose ngay ngày 1 và<br>ngày 4 extraction pilot.|CPU first, nano/320, một camera; không thêm<br>model nặng. A chỉ chạy khi sampling thật đủ.|
+|CPU/GPU không đủ|Benchmark pose ngay ngày 1 và<br>ngày 4 extraction pilot.|CPU first, nano/320, một camera; không thêm<br>model nặng. AI chỉ chạy khi sampling thật đủ.|
 |Push không tới|Smoke điện thoại ngày 5, kiểm<br>project/applicationId/permission/ser<br>vices.|FCM đúng SDK, foreground/background tách;<br>message accepted khác nhận; TTL/retry hữu<br>hạn.|
 |Âm thanh nền không<br>như mong|Channel/sound test máy thật trước<br>ngày 15.|Hai channel alert/silent; raw resource; không<br>hứa vượt DND hoặc force-stop.|
 |Lẫn thiết bị/camera|T16 pairing/revoke/mismatch<br>installation và endpoint ownership.|Key riêng, backend installation ID, FCM device<br>list scoped, không topic global; HTTPS khi<br>ngoài lab.|
@@ -2589,7 +2480,7 @@ Thứ tự giảm tải: bỏ ảnh/clip push → bỏ overlay skeleton trên pr
 
 ### 12.4. Hoàn thành 4 tuần nghĩa là gì? 
 
-Sản phẩm hoàn thành khi nhóm có thể cài APK, khởi động backend, ghép không tài khoản, cấu hình RTSP và lặp được pipeline AI thật → xác nhận → sự kiện → push/app → âm thanh/tắt cảnh báo, kèm test các lỗi quan trọng. Nhóm hiểu module mình viết và hợp đồng mình dùng. Mức hoàn thiện không được suy từ số file hoặc giao diện đẹp. A là nhánh tự train có quy trình thử nghiệm rõ; B bảo vệ khả năng hoàn thành. Tính năng chạy được và chất lượng phát hiện là hai kết quả phải kiểm tra riêng bằng bằng chứng thật. 
+Sản phẩm hoàn thành khi nhóm có thể cài APK, khởi động backend, ghép không tài khoản, cấu hình RTSP và lặp được pipeline AI thật → xác nhận → sự kiện → push/app → âm thanh/tắt cảnh báo, kèm test các lỗi quan trọng. Nhóm hiểu module mình viết và hợp đồng mình dùng. Mức hoàn thiện không được suy từ số file hoặc giao diện đẹp. Chốt dùng pretrained model, giữ nguyên weights và kiểm chứng pipeline theo thời gian. Tính năng chạy được và chất lượng phát hiện là hai kết quả phải kiểm tra riêng bằng bằng chứng thật. 
 
 ## 13. Nguồn kỹ thuật và quy ước tra cứu 
 
@@ -2629,7 +2520,7 @@ Sản phẩm hoàn thành khi nhóm có thể cài APK, khởi động backend, 
 
 [S10] Firebase Flutter setup — Firebase CLI/FlutterFire, firebase_options.dart và nền tảng Android. 
 
-##### <u>https://firebase.google.com/docs/flutter/setup</u> 
+<u>https://firebase.google.com/docs/flutter/setup</u> 
 
 [S11] Firebase Admin send — Server SDK, credential và gửi theo endpoint đã đăng ký; kiểm API SDK hiện hành khi smoke. 
 
@@ -2641,9 +2532,7 @@ Sản phẩm hoàn thành khi nhóm có thể cài APK, khởi động backend, 
 
 <u>https://docs.pytorch.org/tutorials/beginner/saving_loading_models</u> 
 
-[S14] flutter_mjpeg — Widget HTTP MJPEG, header, timeout và lifecycle isLive. 
-
-<u>https://pub.dev/documentation/flutter_mjpeg/latest/</u> 
+[S14] flutter_mjpeg — Widget HTTP MJPEG, header, timeout và lifecycle isLive. <u>https://pub.dev/documentation/flutter_mjpeg/latest/</u> 
 
 [S15] MediaMTX + FFmpeg — Phát MP4 qua RTSP bằng FFmpeg, dùng cho môi trường thử giao thức. 
 
@@ -2651,11 +2540,11 @@ Sản phẩm hoàn thành khi nhóm có thể cài APK, khởi động backend, 
 
 [S16] flutter_local_notifications — Raw resource sound, Android channels, icon và resource giữ khi build. 
 
-##### <u>https://pub.dev/documentation/flutter_local_notifications/latest/</u> 
+<u>https://pub.dev/documentation/flutter_local_notifications/latest/</u> 
 
 [S17] FastAPI async/concurrency — I/O và tác vụ CPU; cơ sở tách inference khỏi event loop. 
 
-##### <u>https://fastapi.tiangolo.com/async/</u> 
+<u>https://fastapi.tiangolo.com/async/</u> 
 
 Tài liệu kỹ thuật được đối chiếu ngày 29/10/2026. API/thư viện có thể thay đổi; ngày 1 nhóm chọn bộ phiên bản thực sự chạy smoke, ghi lockfile rồi giữ bộ đó trong 4 tuần. Các thuật toán, cấu trúc project, ngưỡng thử, phân chia giờ và chỉ tiêu trong kế hoạch là đề xuất kỹ thuật của kế hoạch này; không phải các kết quả đo hoặc yêu cầu nguyên văn từ tài liệu framework. 
 
@@ -2664,12 +2553,17 @@ Tài liệu kỹ thuật được đối chiếu ngày 29/10/2026. API/thư vi�
 |**Thuật ngữ**|**Hiểu và áp dụng trong project**|
 |---|---|
 |Suy luận (inference)|Chạy model đã có weights trên frame/chuỗi để lấy output; khác huấn luyện<br>cập nhật weights.|
+
+
+
+|**Thuật ngữ**|**Hiểu và áp dụng trong project**|
+|---|---|
 |Ước lượng tư thế (pose<br>estimation)|Tìm khớp cơ thể; chưa phải xác định sự kiện ngã.|
 |Cửa sổ trượt (sliding window)|Giữ một đoạn quá khứ gần nhất; phải có thời gian thật để biết 30 mẫu dài<br>bao lâu.|
 |Máy trạng thái (finite state<br>machine)|Quyết định khi nào nghi ngờ/xác nhận/latch/hồi phục; giúp một frame<br>nhiễu không thành alarm.|
 |Chống lặp<br>(deduplication/idempotency)|Cùng sự kiện/episode được xử lý nhiều lần nhưng chỉ tạo một kết quả<br>cảnh báo có ích.|
 |Tập xác thực (validation)|Dùng chọn threshold/siêu tham số; khác tập test khóa để đánh giá sau lựa<br>chọn.|
-|Rò rỉ dữ liệu (data leakage)|Thông tin/recording của test xuất hiện ở train/tuning, làm điểm đánh giá<br>cao giả.|
+|Rò rỉ dữ liệu (data leakage)|Thông tin/recording của test xuất hiện ở tập tuning, làm điểm đánh giá cao<br>giả.|
 |Thông báo đẩy (push notification)|Message được nền tảng chuyển tới app/OS dù không giữ WS, có điều<br>kiện mạng/quyền/vòng đời.|
 |Ghép thiết bị (device pairing)|Cấp khóa cho điện thoại được phép dùng backend, không tạo tài khoản<br>người dùng.|
 |MVP|Phiên bản tối thiểu chạy được trọn quy trình cốt lõi và đã kiểm tra các lỗi<br>quan trọng.|
