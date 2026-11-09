@@ -1,0 +1,4 @@
+# deploy/mediamtx.yml
+paths:
+  fall_demo:
+    source: publisher

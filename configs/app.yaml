@@ -1,0 +1,13 @@
+# configs/app.yaml
+camera_id: living_room
+camera_source: rtsp
+rtsp_url: ""
+rtsp_transport: tcp
+open_timeout_ms: 5000
+read_timeout_ms: 3000
+reconnect_seconds: [1, 2, 4, 8, 15]
+stale_frame_seconds: 3.0
+capture_queue_size: 1
+preview_fps: 3.0
+sqlite_path: runtime/fallguard.db
+app_env: development
