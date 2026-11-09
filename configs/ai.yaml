@@ -1,11 +1,60 @@
-# configs/ai.yaml
-mode: mock
+# Cấu hình AI theo docs/plan.md, mục 2, 4 và 8.
+# Đường dẫn tương đối được resolve từ root project, không từ thư mục configs.
+# Các ngưỡng là điểm bắt đầu thử nghiệm; chỉ hiệu chỉnh trên validation.
+# Không lưu URL RTSP hoặc thông tin bí mật trong file này.
+
+# pretrained = nhánh B (pose + luật); trained = nhánh A (pose + TCN).
+# Online chỉ chạy một scorer. Chỉ chọn trained sau khi có checkpoint thật
+# và đã kiểm chứng chất lượng, tốc độ, metadata tương thích.
+mode: pretrained
+
 pose_weights: models/yolo11n-pose.pt
+device: cpu
 image_size: 480
+tracker: bytetrack.yaml
+pose_schema: COCO17
+
+# Dùng chung cho trích xuất dữ liệu, training và runtime.
+# Lấy mẫu theo timestamp; không đếm lại cùng frame_id để lấp cửa sổ.
+# Khi đổi nhịp/cửa sổ, phải kiểm metadata và train/đánh giá lại nhánh A.
 sample_hz: 10
 window_samples: 30
 max_pose_gap_seconds: 0.3
 min_valid_window_fraction: 0.8
+
+# Xác nhận bằng dữ liệu hợp lệ sau onset; gap không được cộng vào thời gian.
+# Gap > max_pose_gap_seconds hủy xác nhận đang dở và bắt đầu warmup.
 confirmation_seconds: 2.0
 recovery_seconds: 3.0
-cooldown_seconds: 60.0
+cooldown_seconds: 60
+
+# Ngưỡng thử theo mục 4.3; các phép so sánh góc, tỉ lệ, vận tốc dùng >.
+# Candidate cần onset và ít nhất hai bằng chứng hợp lệ, không chỉ bbox ngang.
+thresholds:
+  torso_angle_degrees: 60.0
+  bbox_aspect_ratio: 1.1
+  # Vận tốc hướng xuống, đơn vị chiều cao đứng tham chiếu/giây, không phải m/s.
+  hip_descent_velocity: 0.7
+  # Biến đổi nhanh trong khoảng thời gian < giá trị này.
+  onset_max_seconds: 1.0
+  min_candidate_evidence: 2
+
+# Hai nhánh dùng chung state machine: một sự kiện cho mỗi episode.
+# Hết cooldown khi vẫn nằm không tạo lại sự kiện; ack trên app không re-arm.
+state_machine:
+  require_onset: true
+  latch_until_recovery: true
+  rearm_requires_recovery_and_cooldown: true
+
+# Nhánh A chưa được bật mặc định; không tạo weights/metadata giả.
+# Metadata phải khớp sample_hz, window_samples, input_dim, pose_schema
+# và feature_version của bộ trích xuất dùng chung train/runtime.
+# Ngưỡng score A lấy từ metadata đã chọn trên validation, không tự đặt ở đây.
+trained:
+  weights: models/fall_tcn.pt
+  metadata: models/fall_tcn.meta.json
+  input_dim: 54
+  validate_metadata: true
+  # Thiếu/lỗi checkpoint hoặc metadata không khớp: fallback rõ ràng,
+  # cập nhật status fallback_to=pretrained và model_id thực tế.
+  fallback_mode: pretrained
