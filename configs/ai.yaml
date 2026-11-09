@@ -1,0 +1,11 @@
+# configs/ai.yaml
+mode: mock
+pose_weights: models/yolo11n-pose.pt
+image_size: 480
+sample_hz: 10
+window_samples: 30
+max_pose_gap_seconds: 0.3
+min_valid_window_fraction: 0.8
+confirmation_seconds: 2.0
+recovery_seconds: 3.0
+cooldown_seconds: 60.0
