@@ -1,45 +1,64 @@
-
-
+# Môi trường ảo Python & Cache
 .venv/
 venv/
+ENV/
 __pycache__/
 *.py[cod]
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.coverage
-.coverage.*
-htmlcov/
-coverage.xml
-.tox/
+*$py.class
 *.egg-info/
-/build/
-/dist/
+.Installed
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 
-
+# Bí mật, cấu hình cục bộ & Khóa Firebase Admin (TUYỆT ĐỐI KHÔNG COMMIT)
 .env
 .env.*
 !.env.example
-!.env.*.example
+*firebase-adminsdk*.json
+*service-account*.json
+secrets/
 
+# Cơ sở dữ liệu Runtime SQLite
+runtime/*.db
+runtime/*.db-shm
+runtime/*.db-wal
+runtime/*.sqlite*
 
-/runtime/
-/runs/
-*.log
-/data/raw/
-/data/features/
+# Dữ liệu lớn, Video Raw, Cache Pose & Trọng số nặng
+data/raw/*
+!data/raw/.gitkeep
+data/features/*.npz
+!data/features/.gitkeep
+models/*.pt
+models/*.onnx
 
+# Công cụ thực thi ngoài (MediaMTX / FFmpeg binary trên Windows)
+mediamtx.exe
+mediamtx
+ffmpeg.exe
 
-/models/*.pt
-/models/*.pth
-/models/*.onnx
-/models/*_openvino_model/
+# Flutter / Android Build Artifacts
+mobile/.dart_tool/
+mobile/.packages
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/android/.gradle/
+mobile/android/captures/
+mobile/android/local.properties
+mobile/android/key.properties
+mobile/android/app/debug/
+mobile/android/app/profile/
+mobile/android/app/release/
+*.apk
+*.aab
 
-# Local editor and operating-system files
-.idea/
+# IDE & Hệ điều hành
 .vscode/
+.idea/
+*.swp
 .DS_Store
 Thumbs.db
-Desktop.ini
-                                               
-

@@ -1,26 +1,111 @@
-name: CI
+name: FallGuard CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - develop
+      - "sv1/**"
+      - "sv2/**"
+      - "sv3/**"
   pull_request:
-    branches: [main]
+    branches:
+      - main
+      - develop
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  repo-hygiene:
+    name: Secret & Forbidden File Guard
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.11', '3.12', '3.13']
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Block committed secrets, runtime DB, and raw datasets
+        run: |
+          echo "Checking for forbidden files in git index..."
+          FORBIDDEN_FILES=$(git ls-files | grep -E '(^\.env$|firebase-adminsdk.*\.json$|service-account.*\.json$|^runtime/.*\.db$|^data/raw/.*\.(mp4|avi|zip|png)$|^data/features/.*\.npz$)' || true)
+          if [ -n "$FORBIDDEN_FILES" ]; then
+            echo "ERROR: Forbidden files detected in repository:"
+            echo "$FORBIDDEN_FILES"
+            exit 1
+          fi
+          echo "Repository hygiene check passed."
+
+  backend-ai-tests:
+    name: Python 3.11 Backend & AI Tests (SV1 & SV2)
+    runs-on: ubuntu-latest
+    needs: repo-hygiene
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: pip
-      - run: pip install -r requirements.txt
-      - run: pip install ruff pytest
-      - run: ruff check .
-      - run: ruff check .
-      - name: Run pytest (tạm cho phép chưa có test)
-        run: pytest || [ $? -eq 5 ]
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install system libraries for OpenCV
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgl1 libglib2.0-0
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          if [ -f requirements.lock.txt ]; then
+            python -m pip install -r requirements.lock.txt
+          fi
+          if [ -f pyproject.toml ]; then
+            python -m pip install -e .
+          else
+            python -m pip install fastapi "uvicorn[standard]" pydantic pydantic-settings pyyaml numpy opencv-python firebase-admin httpx pytest
+          fi
+
+      - name: Verify contracts and schema imports
+        run: |
+          PYTHONPATH=. python -c "import backend.contracts, backend.config, backend.storage, backend.main; print('Core imports OK')"
+
+      - name: Run pytest suite
+        run: |
+          PYTHONPATH=. python -m pytest -v
+
+  mobile-flutter-tests:
+    name: Flutter Mobile Tests (SV3)
+    runs-on: ubuntu-latest
+    needs: repo-hygiene
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check if mobile project is initialized
+        id: check_mobile
+        run: |
+          if [ -f "mobile/pubspec.yaml" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "mobile/pubspec.yaml not found yet. Skipping Flutter job."
+          fi
+
+      - name: Set up Flutter
+        if: steps.check_mobile.outputs.exists == 'true'
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+          cache: true
+
+      - name: Install Flutter dependencies
+        if: steps.check_mobile.outputs.exists == 'true'
+        working-directory: mobile
+        run: flutter pub get
+
+      - name: Run Flutter unit tests
+        if: steps.check_mobile.outputs.exists == 'true'
+        working-directory: mobile
+        run: flutter test

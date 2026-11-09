@@ -1,0 +1,28 @@
+# Tự động chuẩn hóa xuống dòng giữa Windows và Linux/macOS
+* text=auto
+
+# Luôn dùng LF cho script shell, Python, YAML, SQL và Dart
+*.py text eol=lf
+*.sh text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.sql text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.dart text eol=lf
+*.gradle text eol=lf
+*.kts text eol=lf
+
+# Luôn dùng CRLF cho script Windows
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Đánh dấu file nhị phân
+*.pt binary
+*.onnx binary
+*.npz binary
+*.db binary
+*.wav binary
+*.png binary
+*.jpg binary
+*.apk binary

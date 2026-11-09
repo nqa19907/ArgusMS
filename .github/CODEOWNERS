@@ -1,0 +1,38 @@
+# Chủ sở hữu theo module dự án FallGuard (thay @sv1, @sv2, @sv3 bằng username GitHub thật của nhóm)
+# Hợp đồng chung cần cả nhóm nắm
+/backend/contracts.py @sv1-username @sv2-username @sv3-username
+
+# Nhánh SV1 - AI / Computer Vision / Training
+/backend/ai/ @sv1-username
+/training/ @sv1-username
+/models/ @sv1-username
+/data/ @sv1-username
+/evaluation/ @sv1-username
+/configs/ai.yaml @sv1-username
+/configs/train.yaml @sv1-username
+/scripts/ai_smoke.py @sv1-username
+/tests/test_ai_sequence.py @sv1-username
+
+# Nhánh SV2 - Backend / RTSP / SQLite / FCM / Integration
+/backend/camera/ @sv2-username
+/backend/api/ @sv2-username
+/backend/alerts/ @sv2-username
+/backend/main.py @sv2-username
+/backend/config.py @sv2-username
+/backend/pipeline.py @sv2-username
+/backend/storage.py @sv2-username
+/backend/schema.sql @sv2-username
+/backend/pairing.py @sv2-username
+/backend/auth.py @sv2-username
+/configs/app.yaml @sv2-username
+/deploy/ @sv2-username
+/scripts/publish_rtsp.sh @sv2-username
+/scripts/test_push.py @sv2-username
+/scripts/measure_e2e.py @sv2-username
+/tests/test_camera.py @sv2-username
+/tests/test_pairing.py @sv2-username
+/tests/test_api.py @sv2-username
+/tests/test_alerts.py @sv2-username
+
+# Nhánh SV3 - Flutter Android App
+/mobile/ @sv3-username
