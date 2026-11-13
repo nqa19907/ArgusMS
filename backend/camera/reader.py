@@ -62,12 +62,17 @@ class CameraReader:
                 with self._lock:
                     self._state = "STOPPED"
                 return
-            self._stop_event.clear()
+            self._stop_event = threading.Event()
             with self._lock:
                 self._state = "CONNECTING"
                 self._reconnect_attempts = 0
                 self._last_frame_mono = None
-            self._thread = threading.Thread(target=self._capture_loop, name="CameraReaderThread", daemon=True)
+            self._thread = threading.Thread(
+                target=self._capture_loop,
+                args=(self._stop_event,),
+                name="CameraReaderThread",
+                daemon=True,
+            )
             self._thread.start()
 
     def stop(self) -> None:
@@ -107,16 +112,24 @@ class CameraReader:
             return self._capture_factory(source_url)
 
         if source_url.lower().startswith(("rtsp://", "rtsps://")):
-            os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = f"rtsp_transport;{self.rtsp_transport}"
-            params = [
-                cv2.CAP_PROP_OPEN_TIMEOUT_MSEC,
-                int(self.open_timeout_ms),
-                cv2.CAP_PROP_READ_TIMEOUT_MSEC,
-                int(self.read_timeout_ms),
-                cv2.CAP_PROP_BUFFERSIZE,
-                1,
-            ]
-            return cv2.VideoCapture(source_url, cv2.CAP_FFMPEG, params)
+            os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = (
+                f"rtsp_transport;{self.rtsp_transport}|stimeout;{int(self.open_timeout_ms) * 1000}"
+            )
+            try:
+                params = [
+                    cv2.CAP_PROP_OPEN_TIMEOUT_MSEC,
+                    int(self.open_timeout_ms),
+                    cv2.CAP_PROP_READ_TIMEOUT_MSEC,
+                    int(self.read_timeout_ms),
+                    cv2.CAP_PROP_BUFFERSIZE,
+                    1,
+                ]
+                cap = cv2.VideoCapture(source_url, cv2.CAP_FFMPEG, params)
+                if cap is not None and cap.isOpened():
+                    return cap
+            except Exception:
+                pass
+            return cv2.VideoCapture(source_url, cv2.CAP_FFMPEG)
 
         if source_url.isdigit():
             return cv2.VideoCapture(int(source_url))
@@ -131,11 +144,11 @@ class CameraReader:
             self._on_session_reset(session_id)
         return session_id
 
-    def _capture_loop(self) -> None:
+    def _capture_loop(self, stop_event: threading.Event) -> None:
         cap: cv2.VideoCapture | None = None
         session_id = self._new_session()
 
-        while not self._stop_event.is_set():
+        while not stop_event.is_set():
             if cap is None or not cap.isOpened():
                 with self._lock:
                     self._state = "CONNECTING" if self._reconnect_attempts == 0 else "RECONNECTING"
@@ -148,7 +161,7 @@ class CameraReader:
                     if cap is not None:
                         cap.release()
                         cap = None
-                    self._wait_backoff()
+                    self._wait_backoff(stop_event)
                     session_id = self._new_session()
                     continue
 
@@ -161,7 +174,7 @@ class CameraReader:
                 cap.release()
                 cap = None
                 self.latest_frame.clear()
-                self._wait_backoff()
+                self._wait_backoff(stop_event)
                 session_id = self._new_session()
                 continue
 
@@ -186,10 +199,10 @@ class CameraReader:
         if cap is not None:
             cap.release()
 
-    def _wait_backoff(self) -> None:
+    def _wait_backoff(self, stop_event: threading.Event) -> None:
         with self._lock:
             idx = min(self._reconnect_attempts, len(self.reconnect_seconds) - 1)
             delay = self.reconnect_seconds[idx]
             self._reconnect_attempts += 1
             self._state = "RECONNECTING" if self._reconnect_attempts <= len(self.reconnect_seconds) else "ERROR"
-        self._stop_event.wait(timeout=delay)
+        stop_event.wait(timeout=delay)
