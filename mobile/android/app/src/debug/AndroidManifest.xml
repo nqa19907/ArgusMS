@@ -1,0 +1,5 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Controlled LAN demo only. Release does not inherit this setting. -->
+    <application android:usesCleartextTraffic="true" />
+</manifest>

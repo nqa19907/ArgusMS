@@ -1,0 +1,4 @@
+# Week-1 integration only. Explicit mock; no camera/model needed for pairing/status/push.
+# From repository root:
+# AI_CONFIG_PATH=mobile/tool/ai_week1.yaml python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --workers 1
+mode: mock
