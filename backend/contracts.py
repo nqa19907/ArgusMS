@@ -70,6 +70,18 @@ class DetectionUpdate:
     candidates: tuple[FallCandidate, ...]
     inference_ms: float
     model_id: str
+    is_test: bool = False
+    schema_version: Literal[1] = field(default=SCHEMA_VERSION, init=False)
+
+    def to_dict(self) -> dict[str, object]:
+        """JSON-safe integration payload; no frames or pose arrays."""
+        from dataclasses import asdict
+
+        payload = asdict(self)
+        for candidate in payload["candidates"]:
+            candidate["reasons"] = list(candidate["reasons"])
+        payload["candidates"] = list(payload["candidates"])
+        return payload
 
 
 @dataclass(frozen=True)

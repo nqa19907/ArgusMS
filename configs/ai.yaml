@@ -3,7 +3,7 @@
 # Các ngưỡng là điểm bắt đầu thử nghiệm; chỉ hiệu chỉnh trên validation.
 # Không lưu URL RTSP hoặc thông tin bí mật trong file này.
 
-# pretrained = nhánh B (pose + luật); trained = nhánh A (pose + TCN).
+# pretrained = (pose + luật); 
 # Online chỉ chạy một scorer. Chỉ chọn trained sau khi có checkpoint thật
 # và đã kiểm chứng chất lượng, tốc độ, metadata tương thích.
 mode: pretrained
@@ -46,15 +46,3 @@ state_machine:
   latch_until_recovery: true
   rearm_requires_recovery_and_cooldown: true
 
-# Nhánh A chưa được bật mặc định; không tạo weights/metadata giả.
-# Metadata phải khớp sample_hz, window_samples, input_dim, pose_schema
-# và feature_version của bộ trích xuất dùng chung train/runtime.
-# Ngưỡng score A lấy từ metadata đã chọn trên validation, không tự đặt ở đây.
-trained:
-  weights: models/fall_tcn.pt
-  metadata: models/fall_tcn.meta.json
-  input_dim: 54
-  validate_metadata: true
-  # Thiếu/lỗi checkpoint hoặc metadata không khớp: fallback rõ ràng,
-  # cập nhật status fallback_to=pretrained và model_id thực tế.
-  fallback_mode: pretrained
