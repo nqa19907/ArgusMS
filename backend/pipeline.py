@@ -40,12 +40,14 @@ class Pipeline:
         )
         self.reader._on_session_reset = self.reset_session
 
-        self._ai_state: str = "READY"
-        self._model_id: str = getattr(self._detector, "model_id", f"{ai_settings.mode}-v1")
+        initial_model_id = getattr(self._detector, "model_id", f"{ai_settings.mode}-v1")
+        self._ai_state: str = "ERROR" if initial_model_id == "error-unavailable" else "WARMUP"
+        self._model_id: str = initial_model_id
         self._last_inference_ms: float = 0.0
-        self._warmup_remaining: int = 0
+        self._warmup_remaining: int = ai_settings.window_samples if self._ai_state != "ERROR" else 0
         self._fps_timestamps: deque[float] = deque(maxlen=30)
         self._last_jpeg_mono: float = 0.0
+        self._last_ws_status_mono: float = 0.0
 
     def start(self, initial_source: str = "") -> None:
         self._stop_event.clear()
@@ -68,17 +70,22 @@ class Pipeline:
     def switch_camera(self, new_url: str, camera_label: str = "") -> None:
         self.reset_session()
         self.reader.start(new_url)
+        self._emit_ws_status(force=True)
 
     def stop_camera(self) -> None:
         self.reader.stop()
         self.reset_session()
         self.latest_jpeg.clear()
+        self._emit_ws_status(force=True)
 
     def reset_session(self, stream_session_id: str = "") -> None:
         with self._lock:
             self._detector.reset(stream_session_id)
             self._state_machine.reset(stream_session_id or None)
             self._fps_timestamps.clear()
+            if self._model_id != "error-unavailable":
+                self._ai_state = "WARMUP"
+                self._warmup_remaining = self.ai_settings.window_samples
 
     def get_ai_status(self) -> dict:
         with self._lock:
@@ -97,8 +104,26 @@ class Pipeline:
                 "model_id": self._model_id,
                 "processed_fps": fps,
                 "last_inference_ms": round(self._last_inference_ms, 1),
-                "warmup_remaining_samples": self._warmup_remaining,
+                "warmup_remaining_samples": int(self._warmup_remaining),
             }
+
+    def _emit_ws_status(self, force: bool = False) -> None:
+        if self._on_status_broadcast is None:
+            return
+        now = time.monotonic()
+        if not force and (now - self._last_ws_status_mono) < 1.0:
+            return
+        self._last_ws_status_mono = now
+        self._on_status_broadcast({
+            "schema_version": 1,
+            "type": "camera.status",
+            "camera": self.reader.get_status(),
+        })
+        self._on_status_broadcast({
+            "schema_version": 1,
+            "type": "ai.status",
+            "ai": self.get_ai_status(),
+        })
 
     def _infer_loop(self) -> None:
         last_seq = 0
@@ -107,6 +132,7 @@ class Pipeline:
         while not self._stop_event.is_set():
             packet, seq = self.reader.latest_frame.wait_newer(last_seq, timeout=0.3)
             if packet is None:
+                self._emit_ws_status(force=False)
                 continue
             last_seq = seq
 
@@ -120,11 +146,12 @@ class Pipeline:
             try:
                 update = self._detector.process(packet)
                 with self._lock:
-                    self._fps_timestamps.append(time.monotonic())
-                    self._last_inference_ms = update.inference_ms
-                    self._model_id = update.model_id
-                    self._warmup_remaining = update.warmup_remaining_samples
-                    self._ai_state = update.ai_state
+                    if update.ai_state != "ERROR":
+                        self._fps_timestamps.append(time.monotonic())
+                    self._last_inference_ms = float(update.inference_ms)
+                    self._model_id = str(update.model_id)
+                    self._warmup_remaining = int(update.warmup_remaining_samples)
+                    self._ai_state = str(update.ai_state)
 
                 for cand in update.candidates:
                     transition = self._state_machine.update(
@@ -139,3 +166,5 @@ class Pipeline:
             except Exception:
                 with self._lock:
                     self._ai_state = "ERROR"
+
+            self._emit_ws_status(force=False)

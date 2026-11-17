@@ -22,9 +22,8 @@ class AppSettings(BaseModel):
 
 
 class AISettings(BaseModel):
-    mode: Literal["mock", "pretrained", "trained"] = "mock"
+    mode: Literal["mock", "pretrained"] = "pretrained"
     pose_weights: str = "models/yolo11n-pose.pt"
-    trained_weights: str = "models/fall_tcn.pt"
     image_size: int = 480
     sample_hz: int = 10
     window_samples: int = 30

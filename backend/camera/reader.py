@@ -8,7 +8,7 @@ import cv2
 from backend.camera.latest import LatestValue
 from backend.contracts import FramePacket
 from backend.storage import utc_now_iso
-
+from urllib.parse import quote, urlparse, urlunparse
 CameraState = Literal["STOPPED", "CONNECTING", "CONNECTED", "RECONNECTING", "ERROR"]
 
 
@@ -18,7 +18,35 @@ def validate_rtsp_url(url: str) -> str:
     if parsed.scheme.lower() not in ("rtsp", "rtsps") or not parsed.hostname:
         raise ValueError("URL phải có scheme rtsp:// hoặc rtsps:// và có hostname hợp lệ")
     return cleaned
+def validate_rtsp_url(
+    url: str, username: str | None = None, password: str | None = None
+) -> str:
+    cleaned = url.strip()
+    parsed = urlparse(cleaned)
+    if parsed.scheme.lower() not in ("rtsp", "rtsps") or not parsed.hostname:
+        raise ValueError("URL phải có scheme rtsp:// hoặc rtsps:// và có hostname hợp lệ")
 
+    if username:
+        enc_user = quote(username, safe="")
+        enc_pass = quote(password or "", safe="")
+        host_port = f"{parsed.hostname}:{parsed.port}" if parsed.port else parsed.hostname
+        netloc = f"{enc_user}:{enc_pass}@{host_port}" if password is not None else f"{enc_user}@{host_port}"
+        cleaned = urlunparse((parsed.scheme, netloc, parsed.path, parsed.params, parsed.query, parsed.fragment))
+    return cleaned
+
+
+def mask_rtsp_url(url: str) -> str:
+    """Che username/password trong URL RTSP khi cần ghi log."""
+    if not url:
+        return ""
+    try:
+        parsed = urlparse(url)
+        if parsed.username or parsed.password:
+            host_port = f"{parsed.hostname}:{parsed.port}" if parsed.port else (parsed.hostname or "")
+            return urlunparse((parsed.scheme, f"***:***@{host_port}", parsed.path, "", "", ""))
+        return url
+    except Exception:
+        return "rtsp://***"
 
 class CameraReader:
     def __init__(
