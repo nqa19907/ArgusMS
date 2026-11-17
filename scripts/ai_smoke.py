@@ -64,6 +64,7 @@ def main() -> None:
     try:
         with FrameSource(source, fps=args.fps, timestamps_path=args.timestamps) as frames:
             for frame_id, timestamp, image in frames:
+                image = cv2.flip(image,1)
                 before = perf_counter()
                 if args.mode == "pose":
                     poses = engine.estimate(image)
